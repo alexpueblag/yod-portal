@@ -7,22 +7,22 @@
 <title>Portal de equipo · Yo Desarrollo</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,600;1,500&family=Manrope:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.24.0/dist/tabler-icons.min.css">
 <style>
   :root{
-    --crema:#F4EFE7; --crema-2:#EFE8DC; --card:#FFFFFF;
-    --oro:#B08D57; --oro-d:#8a6d40; --tinta:#1F1B17; --tinta-2:#6b6258; --linea:#e7ddcb;
+    --crema:#0a0a0c; --crema-2:#121215; --card:#16161a;
+    --oro:#c9a96e; --oro-d:#e0c590; --tinta:#f4f1ea; --tinta-2:#b6b3aa; --linea:rgba(255,255,255,.09);
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--crema);color:var(--tinta);font-family:'Manrope',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+  body{margin:0;background:linear-gradient(rgba(255,255,255,.012) 1px, transparent 1px) 0 0 / 60px 60px, linear-gradient(90deg, rgba(255,255,255,.012) 1px, transparent 1px) 0 0 / 60px 60px, var(--crema);color:var(--tinta);font-family:'Manrope',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
   .wrap{max-width:1080px;margin:0 auto;padding:44px 28px 56px}
   .mark{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--oro);font-weight:600;margin-bottom:10px}
-  h1{font-family:'Playfair Display',serif;font-weight:500;font-size:40px;line-height:1.08;margin:0 0 10px}
+  h1{font-family:'Instrument Serif',serif;font-weight:400;font-size:40px;line-height:1.08;margin:0 0 10px}
   .sub{font-size:15px;color:var(--tinta-2);margin:0 0 30px;max-width:54ch;line-height:1.55}
   .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px}
   .card{background:var(--card);border:1px solid var(--linea);border-radius:16px;overflow:hidden;display:flex;flex-direction:column;text-decoration:none;color:inherit;transition:transform .15s,box-shadow .15s}
-  .card.link:hover{transform:translateY(-3px);box-shadow:0 12px 30px rgba(31,27,23,.10)}
+  .card.link:hover{transform:translateY(-3px);box-shadow:0 12px 30px rgba(0,0,0,.45);border-color:rgba(255,255,255,.16);background:rgba(255,255,255,.06)}
   .card.disabled{cursor:default}
   .thumb{position:relative;height:152px;background:var(--crema-2);overflow:hidden;border-bottom:1px solid var(--linea)}
   .thumb img{width:100%;height:100%;object-fit:cover;object-position:top left}
@@ -30,14 +30,14 @@
   .body{padding:15px 17px 17px}
   .row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:7px}
   .ic{font-size:21px;color:var(--oro);line-height:1}
-  .badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:999px;border:1px solid var(--linea);color:var(--tinta-2);background:var(--crema);white-space:nowrap}
-  .badge.key{color:var(--oro-d);border-color:#e6d3b0;background:#faf3e6}
-  .badge.soon{color:#8a6a2a;border-color:#ecd9a8;background:#fbf1d8}
-  .ttl{font-family:'Playfair Display',serif;font-weight:600;font-size:19px;margin:0 0 5px}
+  .badge{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:4px 10px;border-radius:999px;border:1px solid var(--linea);color:var(--tinta-2);background:rgba(255,255,255,.035);white-space:nowrap}
+  .badge.key{color:var(--oro-d);border-color:rgba(201,169,110,.35);background:rgba(201,169,110,.14)}
+  .badge.soon{color:#D9A45B;border-color:rgba(217,164,91,.35);background:rgba(217,164,91,.14)}
+  .ttl{font-family:'Instrument Serif',serif;font-weight:400;font-size:20px;margin:0 0 5px}
   .desc{font-size:13px;color:var(--tinta-2);line-height:1.5;margin:0 0 9px}
-  .who{font-size:12px;color:#9a907f;margin:0}
+  .who{font-size:12px;color:#8a8780;margin:0}
   .who b{color:var(--tinta-2);font-weight:600}
-  .foot{margin-top:34px;border-top:1px solid var(--linea);padding-top:16px;font-size:12px;color:#9a907f}
+  .foot{margin-top:34px;border-top:1px solid var(--linea);padding-top:16px;font-size:12px;color:#8a8780}
 </style>
 </head>
 <body>
@@ -100,7 +100,7 @@
       <div class="card disabled" aria-disabled="true">
         <div class="thumb soon"><img src="thumbs/obra.jpg" alt="Vista previa de Obra en vivo"></div>
         <div class="body">
-          <div class="row"><span class="ic" style="color:#b9ad97"><i class="ti ti-building-crane"></i></span><span class="badge soon"><i class="ti ti-clock"></i>Próximamente</span></div>
+          <div class="row"><span class="ic" style="color:#8a8780"><i class="ti ti-building-crane"></i></span><span class="badge soon"><i class="ti ti-clock"></i>Próximamente</span></div>
           <div class="ttl" style="color:var(--tinta-2)">Obra en vivo</div>
           <p class="desc">El avance de obra al día (se activa al ponerle su clave).</p>
           <p class="who"><b>Para:</b> equipo de obra</p>
