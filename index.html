@@ -90,7 +90,7 @@
     }
     var controller = new AbortController();
     var liveTimeout = setTimeout(function(){ controller.abort(); }, 2500);
-    fetch(ENDPOINT,{credentials:'include',signal:controller.signal}).then(function(r){if(!r.ok)throw new Error('backend');return r.json();}).then(function(data){
+    fetch(ENDPOINT,{credentials:'omit',signal:controller.signal}).then(function(r){if(!r.ok)throw new Error('backend');return r.json();}).then(function(data){
       clearTimeout(liveTimeout);
       if(!data.ok||!Array.isArray(data.rows))throw new Error('payload'); render(data.rows,'Datos en vivo desde Sheets');
     }).catch(function(){
