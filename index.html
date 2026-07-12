@@ -39,6 +39,9 @@
   .who{font-size:12px;color:#8a8780;margin:0}
   .who b{color:var(--tinta-2);font-weight:600}
   .foot{margin-top:34px;border-top:1px solid var(--linea);padding-top:16px;font-size:12px;color:#8a8780}
+  .source{display:flex;align-items:center;gap:8px;margin:-17px 0 22px;color:#8a8780;font-size:11px}
+  .source i{color:var(--oro)}
+  .empty{grid-column:1/-1;padding:34px;border:1px dashed var(--linea);border-radius:16px;text-align:center;color:var(--tinta-2)}
 </style>
 </head>
 <body>
@@ -47,107 +50,8 @@
     <h1>Portal de equipo</h1>
     <p class="sub" id="saludo">Tus tableros en un solo lugar — cada uno pide su propia clave; te las da Alejandro.</p>
 
-    <div class="grid">
-      <a class="card link" href="https://docs.google.com/spreadsheets/d/1E_89GQBnOmwv5Nej2B-QEkAdVnFYQbBVQUffHWwI7Vk/edit" target="_blank" rel="noopener noreferrer">
-        <div class="thumb"><img src="thumbs/track.svg" alt="Vista previa del Control Maestro YOD"></div>
-        <div class="body">
-          <div class="row"><span class="ic"><i class="ti ti-database"></i></span><span class="badge"><i class="ti ti-shield-check"></i>Fuente maestra</span></div>
-          <div class="ttl">Control Maestro YOD</div>
-          <p class="desc">Sistemas, proyectos, permisos, documentos, tareas, hitos y bitácora en una sola fuente editable.</p>
-          <p class="who"><b>Para:</b> dirección, responsables y agentes</p>
-        </div>
-      </a>
-
-      <a class="card link" href="https://alexpueblag.github.io/potenciales-yod/" target="_blank" rel="noopener noreferrer">
-        <div class="thumb"><img src="thumbs/potenciales.svg" alt="Vista previa del Planificador de Potencial"></div>
-        <div class="body">
-          <div class="row"><span class="ic"><i class="ti ti-map-pin"></i></span><span class="badge key"><i class="ti ti-lock"></i>Pide clave</span></div>
-          <div class="ttl">Planificador de Potencial</div>
-          <p class="desc">El mapa de México con todos los PPP y las 5 calculadoras: macro lotes, depas, lotes, patrimonial y casa por casa.</p>
-          <p class="who"><b>Para:</b> dirección y análisis</p>
-        </div>
-      </a>
-
-      <a class="card link" href="track-codesarrollos.html">
-        <div class="thumb"><img src="thumbs/track.svg" alt="Vista previa del Track de Codesarrollos"></div>
-        <div class="body">
-          <div class="row"><span class="ic"><i class="ti ti-route"></i></span><span class="badge"><i class="ti ti-map-2"></i>Mapa · sin clave</span></div>
-          <div class="ttl">Track de Codesarrollos</div>
-          <p class="desc">Cada co-desarrollo en el mapa con su tablero de trámites: Miramar (vivo) y Casa Alysa (por armar).</p>
-          <p class="who"><b>Para:</b> dirección y tramitología</p>
-        </div>
-      </a>
-
-      <a class="card link" href="https://alexpueblag.github.io/real-miramar-board/" target="_blank" rel="noopener noreferrer">
-        <div class="thumb"><img src="thumbs/miramar.jpg" alt="Vista previa de Real de Miramar"></div>
-        <div class="body">
-          <div class="row"><span class="ic"><i class="ti ti-building-community"></i></span><span class="badge key"><i class="ti ti-lock"></i>Pide clave</span></div>
-          <div class="ttl">Real de Miramar</div>
-          <p class="desc">Trámites, avance y dinero del desarrollo en Guaymas: qué hicimos, qué falta y qué sigue.</p>
-          <p class="who"><b>Para:</b> dirección y tramitología</p>
-        </div>
-      </a>
-
-      <a class="card link" href="https://alexpueblag.github.io/board-aurum/" target="_blank" rel="noopener noreferrer">
-        <div class="thumb"><img src="thumbs/tareas.jpg" alt="Vista previa de Proyectos y tareas"></div>
-        <div class="body">
-          <div class="row"><span class="ic"><i class="ti ti-layout-kanban"></i></span><span class="badge maintenance"><i class="ti ti-shield-lock"></i>Mantenimiento seguro</span></div>
-          <div class="ttl">Proyectos y tareas</div>
-          <p class="desc">Protegido temporalmente mientras se migra el acceso y los datos a un flujo seguro.</p>
-          <p class="who"><b>Para:</b> todo el equipo</p>
-        </div>
-      </a>
-
-      <a class="card link" href="https://alexpueblag.github.io/board-flujo-yod/" target="_blank" rel="noopener noreferrer">
-        <div class="thumb"><img src="thumbs/finanzas.jpg" alt="Vista previa de Finanzas"></div>
-        <div class="body">
-          <div class="row"><span class="ic"><i class="ti ti-cash"></i></span><span class="badge maintenance"><i class="ti ti-shield-lock"></i>Mantenimiento seguro</span></div>
-          <div class="ttl">Finanzas</div>
-          <p class="desc">Protegido temporalmente mientras se reemplaza el acceso público a información financiera.</p>
-          <p class="who"><b>Para:</b> dirección y Genaro</p>
-        </div>
-      </a>
-
-      <a class="card link" href="https://alexpueblag.github.io/interiores-aurum/llave-maestra.html" target="_blank" rel="noopener noreferrer">
-        <div class="thumb"><img src="thumbs/interiores.jpg" alt="Vista previa de Interiores"></div>
-        <div class="body">
-          <div class="row"><span class="ic"><i class="ti ti-armchair"></i></span><span class="badge maintenance"><i class="ti ti-shield-lock"></i>Mantenimiento seguro</span></div>
-          <div class="ttl">Interiores</div>
-          <p class="desc">Protegido temporalmente mientras se asegura la llave maestra y el origen único de datos.</p>
-          <p class="who"><b>Para:</b> Sayri y diseño</p>
-        </div>
-      </a>
-
-      <a class="card link" href="https://alexpueblag.github.io/yodesarrollo-board/" target="_blank" rel="noopener noreferrer">
-        <div class="thumb"><img src="thumbs/presentacion.jpg" alt="Vista previa de Presentación a inversionistas"></div>
-        <div class="body">
-          <div class="row"><span class="ic"><i class="ti ti-presentation"></i></span><span class="badge key"><i class="ti ti-lock"></i>Pide clave</span></div>
-          <div class="ttl">Presentación a inversionistas</div>
-          <p class="desc">El tablero que proyectamos en juntas con inversionistas.</p>
-          <p class="who"><b>Para:</b> dirección</p>
-        </div>
-      </a>
-
-      <a class="card link" href="https://alexpueblag.github.io/aurum-board/" target="_blank" rel="noopener noreferrer">
-        <div class="thumb"><img src="thumbs/redes.jpg" alt="Vista previa de Métricas de redes"></div>
-        <div class="body">
-          <div class="row"><span class="ic"><i class="ti ti-chart-line"></i></span><span class="badge maintenance"><i class="ti ti-shield-lock"></i>Mantenimiento seguro</span></div>
-          <div class="ttl">Métricas de redes</div>
-          <p class="desc">Protegido temporalmente mientras se migra la conexión de métricas a un acceso seguro.</p>
-          <p class="who"><b>Para:</b> marketing</p>
-        </div>
-      </a>
-
-      <div class="card disabled" aria-disabled="true">
-        <div class="thumb soon"><img src="thumbs/obra.jpg" alt="Vista previa de Obra en vivo"></div>
-        <div class="body">
-          <div class="row"><span class="ic" style="color:#8a8780"><i class="ti ti-building-crane"></i></span><span class="badge soon"><i class="ti ti-clock"></i>Próximamente</span></div>
-          <div class="ttl" style="color:var(--tinta-2)">Obra en vivo</div>
-          <p class="desc">El avance de obra al día (se activa al ponerle su clave).</p>
-          <p class="who"><b>Para:</b> equipo de obra</p>
-        </div>
-      </div>
-    </div>
+    <div class="source" id="source"><i class="ti ti-loader-2"></i><span>Sincronizando con Control Maestro…</span></div>
+    <div class="grid" id="portal-grid"><div class="empty">Cargando tableros…</div></div>
 
     <div class="foot">Acceso interno · Co-desarrolladores se entra por separado desde el menú de yodesarrollo.mx</div>
   </div>
@@ -157,6 +61,45 @@
     var s = h < 12 ? 'Buenos días' : (h < 19 ? 'Buenas tardes' : 'Buenas noches');
     var el = document.getElementById('saludo');
     el.textContent = s + '. ' + el.textContent;
+
+    var ENDPOINT = 'https://script.google.com/a/macros/aurumarquitectos.com/s/AKfycbwO0UMNse54cFhS3jQAVXmWPjT1PPUTpBhV29YbyUx4xB9O59X7HG9MioP0auINZJj5eA/exec?action=read&resource=Portal';
+    var grid = document.getElementById('portal-grid');
+    var source = document.getElementById('source');
+
+    function escapeHtml(value){
+      return String(value == null ? '' : value).replace(/[&<>'"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c];});
+    }
+    function badge(row){
+      if (!row.url) return {cls:'soon',icon:'clock',text:'Próximamente'};
+      if (row.estado === 'Mantenimiento') return {cls:'maintenance',icon:'shield-lock',text:'Mantenimiento seguro'};
+      if (row.sensibilidad === 'Confidencial' || row.sensibilidad === 'Restringido') return {cls:'key',icon:'lock',text:row.estado};
+      return {cls:'',icon:'shield-check',text:row.estado || 'Disponible'};
+    }
+    function card(row){
+      var b=badge(row), enabled=Boolean(row.url), tag=enabled?'a':'div';
+      var attrs=enabled?' href="'+escapeHtml(row.url)+'" target="_blank" rel="noopener noreferrer"':' aria-disabled="true"';
+      return '<'+tag+' class="card '+(enabled?'link':'disabled')+'"'+attrs+' data-system-id="'+escapeHtml(row.system_id)+'">'+
+        '<div class="thumb '+(enabled?'':'soon')+'"><img src="'+escapeHtml(row.miniatura)+'" alt="Vista previa de '+escapeHtml(row.titulo_portal)+'"></div>'+
+        '<div class="body"><div class="row"><span class="ic"><i class="ti ti-'+escapeHtml(row.icono)+'"></i></span><span class="badge '+b.cls+'"><i class="ti ti-'+b.icon+'"></i>'+escapeHtml(b.text)+'</span></div>'+
+        '<div class="ttl">'+escapeHtml(row.titulo_portal)+'</div><p class="desc">'+escapeHtml(row.descripcion_portal)+'</p><p class="who"><b>Para:</b> '+escapeHtml(row.audiencia)+'</p></div></'+tag+'>';
+    }
+    function render(rows,label){
+      var clean=rows.filter(function(r){return r.visible==='SI'&&r.system_id;}).sort(function(a,b){return Number(a.orden)-Number(b.orden);});
+      grid.innerHTML=clean.length?clean.map(card).join(''):'<div class="empty">No hay tableros visibles configurados.</div>';
+      source.innerHTML='<i class="ti ti-database-check"></i><span>'+escapeHtml(label)+' · '+clean.length+' módulos</span>';
+    }
+    var controller = new AbortController();
+    var liveTimeout = setTimeout(function(){ controller.abort(); }, 2500);
+    fetch(ENDPOINT,{credentials:'include',signal:controller.signal}).then(function(r){if(!r.ok)throw new Error('backend');return r.json();}).then(function(data){
+      clearTimeout(liveTimeout);
+      if(!data.ok||!Array.isArray(data.rows))throw new Error('payload'); render(data.rows,'Datos en vivo desde Sheets');
+    }).catch(function(){
+      clearTimeout(liveTimeout);
+      fetch('portal-data.json',{cache:'no-store'}).then(function(r){return r.json();}).then(function(data){render(data.rows||[],'Copia operativa verificada');}).catch(function(){
+        grid.innerHTML='<div class="empty">No fue posible cargar el catálogo. Abre el Control Maestro o intenta nuevamente.</div>';
+        source.innerHTML='<i class="ti ti-alert-triangle"></i><span>Catálogo temporalmente no disponible</span>';
+      });
+    });
   })();
 </script>
 <script src="https://alexpueblag.github.io/potenciales-yod/portero.js" data-singate></script>
