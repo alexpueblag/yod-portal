@@ -7,7 +7,8 @@ Se enlaza desde el menú **Accesos** de yodesarrollo.mx.
 - El portal **no autentica**: es un directorio. Cada tablero mantiene su propio control de acceso.
 - La pestaña `Portal` de **YOD OS · Control Maestro** gobierna orden, visibilidad, textos e iconos.
 - URL, estado y sensibilidad se heredan por `system_id` desde la pestaña `Sistemas`.
-- `portal-data.json` es una copia operativa generada y verificada; se usa solo si el backend privado no responde.
+- El endpoint público de solo lectura expone únicamente los 11 campos visuales de `Portal`; los demás recursos conservan autorización obligatoria.
+- `portal-data.json` es una copia operativa generada y verificada; se usa solo si el endpoint público no responde en 2.5 segundos.
 - `noindex` (uso interno). Las vistas previas (`thumbs/`) van **difuminadas** a propósito: ningún dato real legible, porque el repo es público.
 
 ## Tableros que lista
