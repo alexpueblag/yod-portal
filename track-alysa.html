@@ -111,6 +111,7 @@
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const FASES_ORDEN=['OBRA','FINANCIERO','COMERCIALIZACIÓN','CIERRE'];
   const cls=e=>e==='hecho'?'hecho':e==='en curso'?'encurso':e==='por confirmar'?'porconfirmar':'pendiente';
+  const fmtFecha=v=>{const t=String(v||'');if(/^\d{4}-\d{2}-\d{2}T/.test(t)){const d=new Date(t);if(!isNaN(d))return d.toLocaleDateString('es-MX',{month:'short',year:'numeric'})}return t};
   let clave=localStorage.getItem(LSK)||'';
 
   function render(items){
@@ -130,7 +131,7 @@
     $('fases').innerHTML=fases.map(f=>{
       const its=porFase[f],h=its.filter(x=>x.estado==='hecho').length;
       return `<section class="fase"><h2>${esc(f)}<span class="mini">${h}/${its.length} hechos</span></h2><div class="fase-barra"><i style="width:${h/Math.max(1,its.length)*100}%"></i></div>`+
-        its.map(x=>`<div class="hito ${cls(x.estado)}"><span class="dot ${cls(x.estado)}"></span><div class="tx"><div class="nom">${esc(x.hito)}</div><div class="meta">${[x.responsable?'<b>'+esc(x.responsable)+'</b>':'',x.fecha?esc(x.fecha):'',x.notas?esc(x.notas):''].filter(Boolean).join(' · ')}</div></div><span class="badge ${cls(x.estado)}">${esc(x.estado)}</span></div>`).join('')+`</section>`;
+        its.map(x=>`<div class="hito ${cls(x.estado)}"><span class="dot ${cls(x.estado)}"></span><div class="tx"><div class="nom">${esc(x.hito)}</div><div class="meta">${[x.responsable?'<b>'+esc(x.responsable)+'</b>':'',x.fecha?esc(fmtFecha(x.fecha)):'',x.notas?esc(x.notas):''].filter(Boolean).join(' · ')}</div></div><span class="badge ${cls(x.estado)}">${esc(x.estado)}</span></div>`).join('')+`</section>`;
     }).join('');
   }
   async function cargar(k){
