@@ -84,7 +84,7 @@
         '<div class="ttl">'+escapeHtml(row.titulo_portal)+'</div><p class="desc">'+escapeHtml(row.descripcion_portal)+'</p><p class="who"><b>Para:</b> '+escapeHtml(row.audiencia)+'</p></div></'+tag+'>';
     }
     function render(rows,label){
-      var clean=rows.filter(function(r){return r.visible==='SI'&&r.system_id;}).sort(function(a,b){return Number(a.orden)-Number(b.orden);});
+      var clean=rows.filter(function(r){return r.visible==='SI'&&r.system_id&&r.system_id!=='SYS-CONTROL';}).sort(function(a,b){return Number(a.orden)-Number(b.orden);});
       grid.innerHTML=clean.length?clean.map(card).join(''):'<div class="empty">No hay tableros visibles configurados.</div>';
       source.innerHTML='<i class="ti ti-database-check"></i><span>'+escapeHtml(label)+' · '+clean.length+' módulos</span>';
     }
