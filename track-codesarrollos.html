@@ -69,7 +69,10 @@
      link:'https://alexpueblag.github.io/real-miramar-board/',cta:'Abrir track →'},
     {nombre:'Casa Alysa',lugar:'Altozano, Hermosillo, Sonora',lat:29.0675,lng:-111.0713,emoji:'🏡',color:'#8FBF8B',estado:'TRACK VIVO',
      d1:'Co-desarrollo con obra y comercialización en curso',d2:'Qué hicimos · qué falta · qué sigue en 4 fases (obra, financiero, comercialización, cierre) — hitos por confirmar con dirección',
-     link:'track-alysa.html',cta:'Abrir track →'}
+     link:'track-alysa.html',cta:'Abrir track →'},
+    {nombre:'Casa María',lugar:'Alcinos, Hermosillo, Sonora',lat:29.093,lng:-110.986,emoji:'🏠',color:'#8FBF8B',estado:'TRACK VIVO',
+     d1:'Co-desarrollo arrancando · obra al 7.6% · inversión abierta $852k',d2:'Qué hicimos · qué falta · qué sigue en 4 fases — la lección de Alysa aplicada desde el día 1',
+     link:'track-maria.html',cta:'Abrir track →'}
   ];
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const map=L.map('map',{zoomControl:true,attributionControl:true,gestureHandling:true,gestureHandlingOptions:{duration:1200,text:{touch:'Usa dos dedos para mover el mapa',scroll:'Usa ctrl + scroll para hacer zoom',scrollMac:'Usa ⌘ + scroll para hacer zoom'}}}).setView([28.5,-110.9],7);

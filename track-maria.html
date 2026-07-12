@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex,nofollow">
+<title>Track Casa María · Codesarrollos · Yo Desarrollo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#0a0a0c;--card:#131317;--surface:rgba(255,255,255,.045);--text:#f4f1ea;--muted:#8a8780;--suave:#b6b3aa;--linea:rgba(255,255,255,.09);--lineaf:rgba(255,255,255,.16);
+    --gold:#c9a96e;--goldc:#e0c590;--green:#8FBF8B;--orange:#D9A45B;--red:#E0605A;--blue:#8ab8ff}
+  *{box-sizing:border-box}
+  body{font-family:'Manrope',-apple-system,sans-serif;color:var(--text);margin:0;-webkit-font-smoothing:antialiased;
+    background:linear-gradient(rgba(255,255,255,.012) 1px,transparent 1px) 0 0/60px 60px,linear-gradient(90deg,rgba(255,255,255,.012) 1px,transparent 1px) 0 0/60px 60px,var(--bg)}
+  .serif{font-family:'Instrument Serif',Georgia,serif;font-weight:400}
+  #gate{position:fixed;inset:0;z-index:500;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:20px}
+  #gate.off{display:none}
+  .gate-box{width:min(360px,92vw);text-align:center}
+  .gate-box h1{font-size:28px;margin:0 0 4px}
+  .gate-box p{color:var(--muted);font-size:12px;margin:0 0 20px}
+  .gate-box input{width:100%;background:rgba(255,255,255,.06);border:1px solid var(--lineaf);border-radius:12px;padding:13px 14px;color:var(--text);font:inherit;font-size:15px;text-align:center;letter-spacing:.06em}
+  .gate-box input:focus{outline:2px solid #c9a96e66;border-color:var(--gold)}
+  .gate-box button{width:100%;margin-top:10px;background:var(--gold);color:#0a0a0c;border:0;border-radius:12px;padding:13px;font:inherit;font-weight:800;font-size:13px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer}
+  .gate-err{color:var(--red);font-size:12px;min-height:18px;margin-top:10px;font-weight:700}
+  header{position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;background:rgba(10,10,12,.94);backdrop-filter:blur(12px);border-bottom:1px solid #c9a96e59}
+  header .kick{font-size:9px;font-weight:800;letter-spacing:.22em;color:var(--gold);text-transform:uppercase}
+  header a{color:var(--goldc);font-size:11px;font-weight:700;text-decoration:none;white-space:nowrap}
+  .container{max-width:860px;margin:0 auto;padding:18px 16px 70px}
+  .hero{position:relative;overflow:hidden;background:linear-gradient(160deg,#121218,#0c0c0f);border:1px solid var(--linea);border-radius:22px;padding:20px;margin-bottom:14px}
+  .hero::after{content:"";position:absolute;top:-120px;right:-80px;width:320px;height:320px;background:radial-gradient(circle,#c9a96e2b,transparent 65%);pointer-events:none}
+  .hero .kick{font-size:9px;font-weight:800;letter-spacing:.24em;color:var(--gold);text-transform:uppercase}
+  .hero h1{font-size:clamp(26px,5vw,36px);margin:6px 0 2px;line-height:1.05}
+  .hero .hsub{color:var(--muted);font-size:12px;margin:0 0 14px}
+  .hero-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+  .hcard{background:var(--surface);border:1px solid var(--linea);border-radius:16px;padding:12px 14px;min-width:0}
+  .hcard .k{font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+  .hcard .big{font-family:'Instrument Serif',Georgia,serif;font-size:clamp(22px,4vw,30px);line-height:1.1;margin:4px 0 2px}
+  .hcard .sub2{font-size:10.5px;color:var(--muted);line-height:1.4}
+  .progreso{height:14px;border-radius:7px;background:rgba(255,255,255,.08);overflow:hidden;display:flex;margin-top:14px;box-shadow:inset 0 2px 4px #0006}
+  .progreso i{height:100%;display:block;transition:width .3s}
+  .prog-ley{display:flex;gap:14px;font-size:10px;color:var(--muted);font-weight:700;margin-top:6px;flex-wrap:wrap}
+  .prog-ley i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:4px;vertical-align:-1px}
+  .lectura{font-family:'Instrument Serif',Georgia,serif;font-style:italic;font-size:14px;line-height:1.55;color:#d8d0bd;margin:14px 2px 2px;max-width:64ch}
+  .lectura b{color:var(--goldc);font-style:normal}
+  .fase{background:var(--card);border:1px solid var(--linea);border-radius:18px;padding:14px 16px;margin-bottom:14px}
+  .fase h2{font-size:11px;font-weight:800;letter-spacing:.6px;text-transform:uppercase;color:var(--goldc);margin:0 0 4px;display:flex;justify-content:space-between;align-items:center}
+  .fase h2 .mini{color:var(--muted);font-weight:700;letter-spacing:0;text-transform:none}
+  .fase-barra{height:5px;border-radius:3px;background:rgba(255,255,255,.08);margin:6px 0 10px;overflow:hidden}
+  .fase-barra i{display:block;height:100%;background:linear-gradient(90deg,#8fbf8b88,#8FBF8B)}
+  .hito{display:flex;gap:10px;padding:9px 2px;border-bottom:1px solid rgba(255,255,255,.05);align-items:flex-start}
+  .hito:last-child{border-bottom:0}
+  .dot{flex:0 0 13px;width:13px;height:13px;border-radius:50%;margin-top:2px;border:2px solid var(--red)}
+  .dot.hecho{border-color:var(--green);background:var(--green)}
+  .dot.encurso{border-color:var(--orange);background:#d9a45b55}
+  .dot.porconfirmar{border-color:var(--blue);background:#8ab8ff33}
+  .hito .tx{min-width:0;flex:1}
+  .hito .nom{font-size:13px;font-weight:700;line-height:1.35}
+  .hito.hecho .nom{color:var(--suave)}
+  .hito .meta{font-size:10.5px;color:var(--muted);margin-top:2px;line-height:1.45}
+  .hito .meta b{color:var(--suave);font-weight:700}
+  .badge{flex-shrink:0;font-size:8.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;border-radius:9px;padding:3px 8px;margin-top:2px}
+  .badge.hecho{background:#8fbf8b22;color:#a9d3a5}
+  .badge.encurso{background:#d9a45b22;color:#e8c896}
+  .badge.pendiente{background:#e0605a1c;color:#f4b8b3}
+  .badge.porconfirmar{background:#8ab8ff22;color:#b7cdfa}
+  .pie{font-size:10.5px;color:var(--muted);line-height:1.6;padding:10px 2px}
+  .pie b{color:var(--suave)}
+  @media(max-width:640px){.hero-grid{grid-template-columns:1fr 1fr 1fr}.hcard{padding:10px}.container{padding:12px 11px 60px}}
+</style>
+</head>
+<body>
+<div id="gate"><div class="gate-box">
+  <h1 class="serif">Track Casa María</h1>
+  <p>Co-desarrollo Alcinos · qué hicimos, qué falta y qué sigue</p>
+  <input type="password" id="gateClave" placeholder="Clave del board" autocomplete="current-password">
+  <button id="gateBtn">Entrar</button>
+  <div class="gate-err" id="gateErr"></div>
+</div></div>
+
+<header>
+  <span class="kick">Codesarrollos · Track Casa María</span>
+  <a href="track-codesarrollos.html">← Mapa de codesarrollos</a>
+</header>
+
+<main class="container">
+  <section class="hero">
+    <span class="kick">¿Dónde estamos?</span>
+    <h1 class="serif">Casa María · Alcinos</h1>
+    <p class="hsub">ALT-002 · co-desarrollo YOD/Aurum · inversión abierta $852k · avance 7.6%</p>
+    <div class="hero-grid">
+      <div class="hcard"><span class="k">Hicimos</span><div class="big" style="color:var(--green)" id="nHecho">—</div><div class="sub2">hitos completados</div></div>
+      <div class="hcard"><span class="k">En curso / confirmar</span><div class="big" style="color:var(--orange)" id="nCurso">—</div><div class="sub2" id="subCurso">avanzando ahora</div></div>
+      <div class="hcard"><span class="k">Falta</span><div class="big" style="color:var(--red)" id="nPend">—</div><div class="sub2">por hacer</div></div>
+    </div>
+    <div class="progreso" id="progreso"></div>
+    <div class="prog-ley"><span><i style="background:var(--green)"></i>hecho</span><span><i style="background:var(--orange)"></i>en curso</span><span><i style="background:#8ab8ff"></i>por confirmar</span><span><i style="background:#3a3a40"></i>pendiente</span></div>
+    <p class="lectura" id="lectura"></p>
+  </section>
+
+  <div id="fases"><p class="pie">Cargando el track…</p></div>
+
+  <p class="pie"><b>Sheet-driven:</b> cada hito es una fila de la hoja <b>TRACK_MARIA</b> del Sheet maestro "YOD - POTENCIALES" — edita estado, responsable, fecha o notas ahí y el board se actualiza solo. Estados válidos: hecho · en curso · por confirmar · pendiente.</p>
+</main>
+
+<script>
+(()=>{
+  const ENDPOINT='https://script.google.com/macros/s/AKfycbzCoMIKfgiKELs0efVYE0q20UfPXif-6rvfjZlCPgVuTTIljFqsMrUa9uE_4E18QHgB/exec';
+  const LSK='pyod_clave_v1';
+  const $=id=>document.getElementById(id);
+  const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const FASES_ORDEN=['OBRA','FINANCIERO','COMERCIALIZACIÓN','CIERRE'];
+  const cls=e=>e==='hecho'?'hecho':e==='en curso'?'encurso':e==='por confirmar'?'porconfirmar':'pendiente';
+  let clave=localStorage.getItem(LSK)||'';
+
+  function render(items){
+    const hechos=items.filter(x=>x.estado==='hecho').length;
+    const curso=items.filter(x=>x.estado==='en curso').length;
+    const confirmar=items.filter(x=>x.estado==='por confirmar').length;
+    const pend=items.length-hechos-curso-confirmar;
+    $('nHecho').textContent=hechos;$('nCurso').textContent=curso+confirmar;$('nPend').textContent=pend;
+    $('subCurso').textContent=confirmar?`${curso} en curso · ${confirmar} por confirmar`:'avanzando ahora';
+    const tot=Math.max(1,items.length);
+    $('progreso').innerHTML=[[hechos,'var(--green)'],[curso,'var(--orange)'],[confirmar,'#8ab8ff'],[pend,'#3a3a40']]
+      .map(([n,c])=>`<i style="width:${n/tot*100}%;background:${c}"></i>`).join('');
+    const primeros=items.filter(x=>x.estado==='pendiente').slice(0,3).map(x=>x.hito);
+    $('lectura').innerHTML=`De <b>${items.length} hitos</b> llevamos <b>${hechos} hechos</b> (${Math.round(hechos/tot*100)}%), ${curso} en curso y ${confirmar} por confirmar. Lo que sigue: <b>${esc(primeros.join(' · '))||'—'}</b>.`;
+    const porFase={};items.forEach(x=>{(porFase[x.fase]=porFase[x.fase]||[]).push(x)});
+    const fases=FASES_ORDEN.filter(f=>porFase[f]).concat(Object.keys(porFase).filter(f=>!FASES_ORDEN.includes(f)));
+    $('fases').innerHTML=fases.map(f=>{
+      const its=porFase[f],h=its.filter(x=>x.estado==='hecho').length;
+      return `<section class="fase"><h2>${esc(f)}<span class="mini">${h}/${its.length} hechos</span></h2><div class="fase-barra"><i style="width:${h/Math.max(1,its.length)*100}%"></i></div>`+
+        its.map(x=>`<div class="hito ${cls(x.estado)}"><span class="dot ${cls(x.estado)}"></span><div class="tx"><div class="nom">${esc(x.hito)}</div><div class="meta">${[x.responsable?'<b>'+esc(x.responsable)+'</b>':'',x.fecha?esc(x.fecha):'',x.notas?esc(x.notas):''].filter(Boolean).join(' · ')}</div></div><span class="badge ${cls(x.estado)}">${esc(x.estado)}</span></div>`).join('')+`</section>`;
+    }).join('');
+  }
+  async function cargar(k){
+    const r=await fetch(ENDPOINT+'?recurso=track&track=maria&k='+encodeURIComponent(k)).then(x=>x.json());
+    if(!r.ok)throw r.error||'error';
+    render(r.items||[]);
+  }
+  async function entrar(){
+    const v=$('gateClave').value.trim();if(!v){$('gateErr').textContent='Escribe la clave';return}
+    $('gateBtn').disabled=true;$('gateErr').textContent='';
+    try{await cargar(v);clave=v;localStorage.setItem(LSK,v);$('gate').classList.add('off')}
+    catch(e){$('gateErr').textContent=e==='clave'?'Clave incorrecta':'Sin conexión con el Sheet'}
+    $('gateBtn').disabled=false;
+  }
+  $('gateBtn').onclick=entrar;$('gateClave').addEventListener('keydown',e=>{if(e.key==='Enter')entrar()});
+  if(clave){cargar(clave).then(()=>$('gate').classList.add('off')).catch(e=>{if(e==='clave'){localStorage.removeItem(LSK);$('gateErr').textContent='La clave cambió'}else $('gateErr').textContent='Sin conexión con el Sheet'})}
+})();
+</script>
+</body>
+</html>
