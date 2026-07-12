@@ -33,6 +33,7 @@
   .panel{position:absolute;z-index:1100;top:12px;left:12px;background:rgba(19,19,23,.92);backdrop-filter:blur(10px);border:1px solid var(--linea);border-radius:16px;padding:12px 14px;max-width:280px}
   .panel h1{font-size:20px;margin:0}
   .panel .sub{font-size:10.5px;color:var(--muted);margin:2px 0 0;line-height:1.45}
+  .panel .source{font-size:9px;color:var(--gold);margin:6px 0 0;letter-spacing:.03em}
   .leyenda{display:flex;gap:10px;margin-top:9px;font-size:10px;font-weight:700;color:var(--suave)}
   .leyenda i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px}
   .pie{position:absolute;z-index:1100;bottom:10px;left:12px;font-size:9.5px;color:var(--muted);background:rgba(10,10,12,.7);border-radius:8px;padding:4px 8px}
@@ -52,6 +53,7 @@
   <div class="panel">
     <h1 class="serif">Track de Codesarrollos</h1>
     <p class="sub">Cada pin es un co-desarrollo con su tablero de trámites: qué hicimos, qué falta y qué sigue. Toca el pin y abre su track.</p>
+    <p class="source" id="source">Sincronizando con Control Maestro…</p>
     <div class="leyenda"><span><i style="background:var(--green)"></i>track vivo</span><span><i style="background:var(--orange)"></i>track pendiente</span></div>
   </div>
   <div class="pie">los tableros de cada co-desarrollo piden su propia clave</div>
@@ -61,20 +63,11 @@
 <script src="https://unpkg.com/leaflet-gesture-handling@1.2.2/dist/leaflet-gesture-handling.min.js"></script>
 <script>
 (()=>{
-  // Co-desarrollos con track de trámites. Sin datos sensibles aquí: nombres, lugares y estado.
-  // (Siguiente iteración: volverlo sheet-driven como los pines de Potenciales.)
-  const PINES=[
-    {nombre:'Real de Miramar',lugar:'Miramar, Guaymas, Sonora',lat:27.906,lng:-110.955,emoji:'🏗️',color:'#8FBF8B',estado:'TRACK VIVO',
-     d1:'Co-desarrollo en ejecución · tramitología y avance al día',d2:'Qué hicimos · qué falta · qué sigue, con la escalera precio↔permiso',
-     link:'https://alexpueblag.github.io/real-miramar-board/',cta:'Abrir track →'},
-    {nombre:'Casa Alysa',lugar:'Altozano, Hermosillo, Sonora',lat:29.0675,lng:-111.0713,emoji:'🏡',color:'#8FBF8B',estado:'TRACK VIVO',
-     d1:'Co-desarrollo con obra y comercialización en curso',d2:'Qué hicimos · qué falta · qué sigue en 4 fases (obra, financiero, comercialización, cierre) — hitos por confirmar con dirección',
-     link:'track-alysa.html',cta:'Abrir track →'},
-    {nombre:'Casa María',lugar:'Alcinos, Hermosillo, Sonora',lat:29.093,lng:-110.986,emoji:'🏠',color:'#8FBF8B',estado:'TRACK VIVO',
-     d1:'Co-desarrollo arrancando · obra al 7.6% · inversión abierta $852k',d2:'Qué hicimos · qué falta · qué sigue en 4 fases — la lección de Alysa aplicada desde el día 1',
-     link:'track-maria.html',cta:'Abrir track →'}
-  ];
+  const ENDPOINT='https://script.google.com/macros/s/AKfycby5LKYKRwl0EsNgppOIeD_ArST8vSXRgNO4ns8XZbFW4yjfglzu4io_vhabB8h-J792Tw/exec?action=read&resource=Track';
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const normaliza=r=>({nombre:r.nombre_publico,lugar:r.lugar_publico,lat:Number(r.lat),lng:Number(r.lng),emoji:r.emoji,color:r.color,estado:r.estado,d1:r.descripcion,d2:r.detalle,link:r.url,cta:r.cta});
+  function inicia(PINES){
+  if(!PINES.length){document.getElementById('source').textContent='No hay proyectos visibles configurados';return}
   const map=L.map('map',{zoomControl:true,attributionControl:true,gestureHandling:true,gestureHandlingOptions:{duration:1200,text:{touch:'Usa dos dedos para mover el mapa',scroll:'Usa ctrl + scroll para hacer zoom',scrollMac:'Usa ⌘ + scroll para hacer zoom'}}}).setView([28.5,-110.9],7);
   L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'&copy; OpenStreetMap &copy; CARTO',subdomains:'abcd',maxZoom:19}).addTo(map);
   window._map=map;
@@ -88,6 +81,17 @@
   (function ajusta(n){setTimeout(()=>{map.invalidateSize();if(map.getSize().x>0)map.fitBounds(bounds);else if(n>0)ajusta(n-1)},300)})(25);
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){map.invalidateSize();map.fitBounds(bounds)}});
   window.addEventListener('resize',()=>map.invalidateSize());
+  }
+  const controller=new AbortController();
+  const timeout=setTimeout(()=>controller.abort(),8000);
+  fetch(ENDPOINT,{credentials:'omit',signal:controller.signal}).then(r=>{if(!r.ok)throw Error('backend');return r.json()}).then(data=>{
+    clearTimeout(timeout); if(!data.ok||!Array.isArray(data.rows))throw Error('payload');
+    document.getElementById('source').textContent=`Datos en vivo desde Sheets · ${data.rows.length} proyectos`; inicia(data.rows.map(normaliza));
+  }).catch(()=>{
+    clearTimeout(timeout); fetch('track-data.json',{cache:'no-store'}).then(r=>r.json()).then(data=>{
+      document.getElementById('source').textContent=`Copia operativa verificada · ${data.rows.length} proyectos`; inicia(data.rows.map(normaliza));
+    }).catch(()=>{document.getElementById('source').textContent='Track temporalmente no disponible'});
+  });
 })();
 </script>
 <script src="https://alexpueblag.github.io/potenciales-yod/portero.js" data-singate></script>

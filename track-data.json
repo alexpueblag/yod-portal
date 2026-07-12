@@ -1,0 +1,10 @@
+{
+  "schema_version": "1.0.0",
+  "source": "YOD OS · Control Maestro / Track",
+  "generated_at": "2026-07-12T14:40:00-07:00",
+  "rows": [
+    {"project_id":"PRJ-RM","orden":"1","visible":"SI","nombre_publico":"Real de Miramar","lugar_publico":"Miramar, Guaymas, Sonora","lat":"27.906","lng":"-110.955","emoji":"🏗️","color":"#8FBF8B","estado":"TRACK VIVO","descripcion":"Co-desarrollo en ejecución · tramitología y avance al día","detalle":"Qué hicimos · qué falta · qué sigue, con la escalera precio↔permiso","url":"https://alexpueblag.github.io/real-miramar-board/","cta":"Abrir track →"},
+    {"project_id":"PRJ-ALYSA","orden":"2","visible":"SI","nombre_publico":"Casa Alysa","lugar_publico":"Altozano, Hermosillo, Sonora","lat":"29.0675","lng":"-111.0713","emoji":"🏡","color":"#8FBF8B","estado":"TRACK VIVO","descripcion":"Co-desarrollo con obra y comercialización en curso","detalle":"Qué hicimos · qué falta · qué sigue en cuatro fases","url":"https://alexpueblag.github.io/yod-portal/track-alysa.html","cta":"Abrir track →"},
+    {"project_id":"PRJ-MARIA","orden":"3","visible":"SI","nombre_publico":"Casa María","lugar_publico":"Alcinos, Hermosillo, Sonora","lat":"29.093","lng":"-110.986","emoji":"🏠","color":"#8FBF8B","estado":"TRACK VIVO","descripcion":"Co-desarrollo en etapa de arranque","detalle":"Qué hicimos · qué falta · qué sigue en cuatro fases","url":"https://alexpueblag.github.io/yod-portal/track-maria.html","cta":"Abrir track →"}
+  ]
+}

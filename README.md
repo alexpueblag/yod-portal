@@ -28,3 +28,8 @@ Se enlaza desde el menú **Accesos** de yodesarrollo.mx.
 2. Agregar su `system_id` en `Portal` y editar orden, visibilidad, descripción, audiencia, icono y miniatura.
 3. No duplicar URL, estado o sensibilidad en `Portal`: esas columnas son fórmulas vinculadas a `Sistemas`.
 4. Regenerar `portal-data.json` al publicar para conservar una contingencia verificable.
+
+## Track de Codesarrollos
+- La pestaña `Track` gobierna los pines mediante `project_id`.
+- El endpoint público expone únicamente la proyección cartográfica y rechaza recursos operativos.
+- `track-data.json` es la contingencia verificable; no contiene montos, carpetas Drive ni enlaces internos de Sheets.
