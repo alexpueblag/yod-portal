@@ -35,11 +35,11 @@
   // El portal es un directorio: una tarjeta abre si tiene destino conocido (allowlist). El estado es etiqueta, no candado.
   function enabled(row){return Boolean(resolveUrl(row));}
   function badge(row){
+    if(enabled(row))return {cls:'active',icon:'arrow-up-right',text:'Abrir'};
     var s=state(row.estado);
-    if(!resolveUrl(row))return {cls:'soon',icon:'clock',text:'Próximamente'};
     if(s==='mantenimiento')return {cls:'maintenance',icon:'shield-lock',text:'Mantenimiento'};
     if(s==='revisión'||s==='revision')return {cls:'review',icon:'clipboard-check',text:'En revisión'};
-    return {cls:'active',icon:'arrow-up-right',text:'Abrir'};
+    return {cls:'soon',icon:'clock',text:'Próximamente'};
   }
   function card(row){
     var on=enabled(row),b=badge(row),id='portal-'+String(row.system_id||'modulo').replace(/[^a-z0-9_-]/gi,'-');
