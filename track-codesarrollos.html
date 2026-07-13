@@ -66,7 +66,7 @@
 (()=>{
   const ENDPOINT='https://script.google.com/macros/s/AKfycby5LKYKRwl0EsNgppOIeD_ArST8vSXRgNO4ns8XZbFW4yjfglzu4io_vhabB8h-J792Tw/exec?action=read&resource=Track';
   const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  const normaliza=r=>({project_id:r.project_id,nombre:r.nombre_publico,lugar:r.lugar_publico,lat:Number(r.lat),lng:Number(r.lng),emoji:r.emoji,color:/^#[0-9a-f]{6}$/i.test(String(r.color||''))?r.color:'#6f7785',estado:r.estado,d1:r.descripcion,d2:r.detalle,link:PortalCore.state(r.estado)==='activo'?PortalCore.safeTrackUrl(r.url,r.project_id):'',cta:r.cta});
+  const normaliza=r=>({project_id:r.project_id,nombre:r.nombre_publico,lugar:r.lugar_publico,lat:Number(r.lat),lng:Number(r.lng),emoji:r.emoji,color:/^#[0-9a-f]{6}$/i.test(String(r.color||''))?r.color:'#6f7785',estado:r.estado,d1:r.descripcion,d2:r.detalle,link:PortalCore.resolveTrackUrl(r),cta:r.cta});
   function inicia(PINES){
   if(!PINES.length){document.getElementById('source').textContent='No hay proyectos visibles configurados';return}
   const map=L.map('map',{zoomControl:true,attributionControl:true,gestureHandling:true,gestureHandlingOptions:{duration:1200,text:{touch:'Usa dos dedos para mover el mapa',scroll:'Usa ctrl + scroll para hacer zoom',scrollMac:'Usa ⌘ + scroll para hacer zoom'}}}).setView([28.5,-110.9],7);
