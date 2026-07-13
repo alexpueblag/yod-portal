@@ -32,13 +32,14 @@
   // Una tarjeta abre si tiene destino conocido y NO está explícitamente en mantenimiento (el estado es etiqueta, no candado de navegación).
   function safeThumb(value){var v=String(value||'');return /^thumbs\/[a-z0-9._-]+$/i.test(v)?v:'thumbs/track.svg';}
   function safeIcon(value){var v=String(value||'').toLowerCase();return /^[a-z0-9-]+$/.test(v)?v:'layout-dashboard';}
-  function enabled(row){return state(row.estado)!=='mantenimiento'&&Boolean(resolveUrl(row));}
+  // El portal es un directorio: una tarjeta abre si tiene destino conocido (allowlist). El estado es etiqueta, no candado.
+  function enabled(row){return Boolean(resolveUrl(row));}
   function badge(row){
     var s=state(row.estado);
-    if(enabled(row))return {cls:'active',icon:'arrow-up-right',text:'Abrir'};
+    if(!resolveUrl(row))return {cls:'soon',icon:'clock',text:'Próximamente'};
     if(s==='mantenimiento')return {cls:'maintenance',icon:'shield-lock',text:'Mantenimiento'};
-    if(s==='revisión'||s==='revision')return {cls:'review',icon:'clipboard-check',text:'En validación'};
-    return {cls:'soon',icon:'clock',text:'Próximamente'};
+    if(s==='revisión'||s==='revision')return {cls:'review',icon:'clipboard-check',text:'En revisión'};
+    return {cls:'active',icon:'arrow-up-right',text:'Abrir'};
   }
   function card(row){
     var on=enabled(row),b=badge(row),id='portal-'+String(row.system_id||'modulo').replace(/[^a-z0-9_-]/gi,'-');
