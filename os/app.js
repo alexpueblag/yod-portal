@@ -61,7 +61,9 @@
       var response=await fetch(PORTERO_ENDPOINT+'?recurso=canje&t='+encodeURIComponent(token),{cache:'no-store'});var data=await response.json();
       if(!data||!data.ok)throw new Error('sesión');state.role=data.rol||'vista';state.boards=data.boards||'';state.profileReady=true;
       var name=data.nombre||data.correo||'Equipo YOD';$('user-name').textContent=name;$('user-role').textContent=state.role;$('avatar').textContent=initials(name);$('first-name').textContent=name.split(/\s|@/)[0];$('access-status').textContent=state.role==='admin'?'Dirección':'Autorizado';
-      document.querySelectorAll('.admin-only').forEach(function(el){el.classList.toggle('hidden',state.role!=='admin');});if(state.rawRows.length)renderModules(state.rawRows);if(window.YodAccessPolicy.hasCode(state.boards,'TA')||state.role==='admin')await loadOperations(token);else renderOperationsLocked();
+      document.querySelectorAll('.admin-only').forEach(function(el){el.classList.toggle('hidden',state.role!=='admin');});
+      var visibleQuick=0;document.querySelectorAll('.quick-card[data-system-id]').forEach(function(el){var allowed=window.YodAccessPolicy.canOpen(state.boards,el.dataset.systemId,state.role);el.classList.toggle('hidden',!allowed);if(allowed)visibleQuick++;});$('quick-section').classList.toggle('hidden',visibleQuick===0);
+      if(state.rawRows.length)renderModules(state.rawRows);if(window.YodAccessPolicy.hasCode(state.boards,'TA')||state.role==='admin')await loadOperations(token);else renderOperationsLocked();
     }catch(_error){$('user-role').textContent='Sesión por validar';$('access-status').textContent='Validación pendiente';}
   }
 
