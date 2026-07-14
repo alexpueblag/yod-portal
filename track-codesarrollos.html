@@ -9,38 +9,43 @@
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Manrope:wght@400;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="">
 <link rel="stylesheet" href="https://unpkg.com/leaflet-gesture-handling@1.2.2/dist/leaflet-gesture-handling.min.css">
+<link rel="stylesheet" href="https://alexpueblag.github.io/yod-portal/os/shell.css">
 <style>
-  :root{--bg:#0a0a0c;--card:#131317;--text:#f4f1ea;--muted:#8a8780;--suave:#b6b3aa;--linea:rgba(255,255,255,.09);--lineaf:rgba(255,255,255,.16);--gold:#c9a96e;--goldc:#e0c590;--green:#8FBF8B;--orange:#D9A45B;--red:#E0605A}
+  :root{--bg:#f6f3ed;--card:#ffffff;--text:#231d14;--muted:#766f62;--suave:#4c4536;--linea:#e1dacb;--lineaf:#d8cfbb;--gold:#9a7b3f;--goldc:#b98b3c;--green:#39744b;--orange:#9a6a1e;--red:#a94438}
   *{box-sizing:border-box}
   body{font-family:'Manrope',-apple-system,sans-serif;color:var(--text);margin:0;background:var(--bg);-webkit-font-smoothing:antialiased}
   .serif{font-family:'Instrument Serif',Georgia,serif;font-weight:400}
-  header{position:relative;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;background:rgba(10,10,12,.94);border-bottom:1px solid #c9a96e59}
+  header{position:relative;z-index:20;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 16px;background:rgba(246,243,237,.94);border-bottom:1px solid #e1dacb}
   header .kick{font-size:9px;font-weight:800;letter-spacing:.22em;color:var(--gold);text-transform:uppercase}
   header a{color:var(--goldc);font-size:11px;font-weight:700;text-decoration:none}
   #wrap{position:relative;height:calc(100vh - 46px)}
-  #map{position:absolute;inset:0;background:#0a0a0c}
+  #map{position:absolute;inset:0;background:#eee9df}
   .leaflet-container{font:inherit}
-  .leaflet-popup-content-wrapper{background:#16161b;color:var(--text);border:1px solid var(--lineaf);border-radius:14px;box-shadow:0 12px 32px #000a}
-  .leaflet-popup-tip{background:#16161b}
+  .leaflet-popup-content-wrapper{background:#ffffff;color:var(--text);border:1px solid var(--lineaf);border-radius:14px;box-shadow:0 12px 32px #000a}
+  .leaflet-popup-tip{background:#ffffff}
   .pp-t{font-family:'Instrument Serif',Georgia,serif;font-size:17px;margin:0 0 2px}
   .pp-badge{display:inline-block;font-size:8.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;border-radius:9px;padding:2px 8px;color:#0a0a0c;margin-bottom:6px}
   .pp-l{font-size:10.5px;color:var(--muted);margin:0 0 7px}
   .pp-d{font-size:11px;color:var(--suave);line-height:1.5;margin:0 0 3px}
   .pp-d b{color:var(--goldc)}
   .pp-a{display:inline-block;margin-top:8px;background:var(--gold);color:#0a0a0c!important;font-size:10px;font-weight:800;border-radius:9px;padding:6px 10px;text-decoration:none;text-transform:uppercase;letter-spacing:.06em}
-  .pp-a.off{background:rgba(255,255,255,.1);color:var(--muted)!important;cursor:default}
+  .pp-a.off{background:rgba(35,29,20,.08);color:var(--muted)!important;cursor:default}
   .pin-emoji{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50% 50% 50% 4px;border:2px solid #0a0a0c;box-shadow:0 4px 12px #000b;font-size:15px}
-  .panel{position:absolute;z-index:1100;top:12px;left:12px;background:rgba(19,19,23,.92);backdrop-filter:blur(10px);border:1px solid var(--linea);border-radius:16px;padding:12px 14px;max-width:280px}
+  .panel{position:absolute;z-index:1100;top:12px;left:12px;background:rgba(255,255,255,.94);backdrop-filter:blur(10px);border:1px solid var(--linea);border-radius:16px;padding:12px 14px;max-width:280px}
   .panel h1{font-size:20px;margin:0}
   .panel .sub{font-size:10.5px;color:var(--muted);margin:2px 0 0;line-height:1.45}
   .panel .source{font-size:9px;color:var(--gold);margin:6px 0 0;letter-spacing:.03em}
   .leyenda{display:flex;gap:10px;margin-top:9px;font-size:10px;font-weight:700;color:var(--suave)}
   .leyenda i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px}
-  .pie{position:absolute;z-index:1100;bottom:10px;left:12px;font-size:9.5px;color:var(--muted);background:rgba(10,10,12,.7);border-radius:8px;padding:4px 8px}
+  .pie{position:absolute;z-index:1100;bottom:10px;left:12px;font-size:9.5px;color:var(--muted);background:rgba(255,255,255,.85);border-radius:8px;padding:4px 8px}
   @media(max-width:640px){
     .panel{left:8px;right:8px;max-width:none;padding:9px 11px}
     .panel h1{font-size:16px}
   }
+  /* Cara YOD OS: el shell da la barra + topbar; el mapa llena el lienzo */
+  header{display:none}
+  #wrap{height:calc(100vh - 64px)}
+  @media(max-width:680px){#wrap{height:calc(100vh - 56px)}}
 </style>
 </head>
 <body>
@@ -70,7 +75,7 @@
   function inicia(PINES){
   if(!PINES.length){document.getElementById('source').textContent='No hay proyectos visibles configurados';return}
   const map=L.map('map',{zoomControl:false,attributionControl:true,gestureHandling:true,gestureHandlingOptions:{duration:1200,text:{touch:'Usa dos dedos para mover el mapa',scroll:'Usa ctrl + scroll para hacer zoom',scrollMac:'Usa ⌘ + scroll para hacer zoom'}}}).setView([28.5,-110.9],7);L.control.zoom({position:'bottomleft'}).addTo(map);
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{attribution:'&copy; OpenStreetMap &copy; CARTO',subdomains:'abcd',maxZoom:19}).addTo(map);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{attribution:'&copy; OpenStreetMap &copy; CARTO',subdomains:'abcd',maxZoom:19}).addTo(map);
   window._map=map;
   let bounds=L.latLngBounds(PINES.map(p=>[p.lat,p.lng])).pad(0.5);
   PINES.forEach(p=>{
@@ -92,5 +97,6 @@
 })();
 </script>
 <script src="https://alexpueblag.github.io/potenciales-yod/portero.js?v=779fed3"></script>
+<script src="https://alexpueblag.github.io/yod-portal/os/shell.js"></script>
 </body>
 </html>
