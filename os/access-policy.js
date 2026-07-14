@@ -1,0 +1,19 @@
+(function(root){
+  'use strict';
+  var SYSTEM_CODES=Object.freeze({
+    'SYS-POTENCIALES':['MP','MA','MX','UN','RE','PA'],
+    'SYS-TRACK':['TC','TA','TM'],
+    'SYS-TAREAS':['TA'],
+    'SYS-FLUJO':['FL'],
+    'SYS-MARKETING':['MK'],
+    'SYS-CONTROL':['AC']
+  });
+  function codes(value){var raw=String(value||'').trim();if(!raw)return [];if(raw==='*')return ['*'];return raw.toUpperCase().split(/[,|; ]+/).filter(Boolean);}
+  function hasCode(boards,code){var list=codes(boards);return list.includes('*')||list.includes(String(code||'').toUpperCase());}
+  function canOpen(boards,systemId,role){
+    if(String(role||'').toLowerCase()==='admin'||codes(boards).includes('*'))return true;
+    var required=SYSTEM_CODES[String(systemId||'')];if(!required)return false;
+    return required.some(function(code){return hasCode(boards,code);});
+  }
+  root.YodAccessPolicy=Object.freeze({systemCodes:SYSTEM_CODES,codes:codes,hasCode:hasCode,canOpen:canOpen});
+})(typeof globalThis!=='undefined'?globalThis:this);

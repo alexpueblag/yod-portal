@@ -9,7 +9,7 @@
     'SYS-TAREAS':'checklist','SYS-FLUJO':'wallet','SYS-INTERIORES':'armchair-2',
     'SYS-INVERSION':'presentation-analytics','SYS-MARKETING':'speakerphone','SYS-OBRA':'building-skyscraper'
   };
-  var state={modules:[],role:'vista',loading:false};
+  var state={modules:[],rawRows:[],role:'vista',boards:'',profileReady:false,loading:false};
   var $=function(id){return document.getElementById(id);};
 
   function greeting(){var h=new Date().getHours();return h<12?'Buenos días':h<19?'Buenas tardes':'Buenas noches';}
@@ -32,7 +32,9 @@
 
   function renderModules(rows){
     var grid=$('module-grid');grid.replaceChildren();
-    state.modules=window.PortalCore.cleanRows(rows).filter(function(row){return Boolean(window.PortalCore.resolveUrl(row));});
+    state.rawRows=Array.isArray(rows)?rows:state.rawRows;
+    if(!state.profileReady){state.modules=[];var waiting=document.createElement('div');waiting.className='empty-state';waiting.textContent='Inicie sesión para consultar sus módulos autorizados.';grid.appendChild(waiting);grid.setAttribute('aria-busy','false');$('module-count').textContent='—';return;}
+    state.modules=window.PortalCore.cleanRows(state.rawRows).filter(function(row){return Boolean(window.PortalCore.resolveUrl(row))&&window.YodAccessPolicy.canOpen(state.boards,row.system_id,state.role);});
     state.modules.forEach(function(row){var node=moduleNode(row);if(node)grid.appendChild(node);});
     if(!grid.children.length){var empty=document.createElement('div');empty.className='empty-state';empty.textContent='No hay módulos disponibles en Control Maestro.';grid.appendChild(empty);}
     grid.setAttribute('aria-busy','false');$('module-count').textContent=String(state.modules.length);buildSearch('');
@@ -54,14 +56,16 @@
 
   async function loadIdentity(){
     var token='';try{token=localStorage.getItem(TOKEN_KEY)||'';}catch(_error){}
-    if(!token){$('access-status').textContent='Requiere acceso';return;}
+    if(!token){$('access-status').textContent='Requiere acceso';state.profileReady=false;return;}
     try{
       var response=await fetch(PORTERO_ENDPOINT+'?recurso=canje&t='+encodeURIComponent(token),{cache:'no-store'});var data=await response.json();
-      if(!data||!data.ok)throw new Error('sesión');state.role=data.rol||'vista';
+      if(!data||!data.ok)throw new Error('sesión');state.role=data.rol||'vista';state.boards=data.boards||'';state.profileReady=true;
       var name=data.nombre||data.correo||'Equipo YOD';$('user-name').textContent=name;$('user-role').textContent=state.role;$('avatar').textContent=initials(name);$('first-name').textContent=name.split(/\s|@/)[0];$('access-status').textContent=state.role==='admin'?'Dirección':'Autorizado';
-      document.querySelectorAll('.admin-only').forEach(function(el){el.classList.toggle('hidden',state.role!=='admin');});await loadOperations(token);
+      document.querySelectorAll('.admin-only').forEach(function(el){el.classList.toggle('hidden',state.role!=='admin');});if(state.rawRows.length)renderModules(state.rawRows);if(window.YodAccessPolicy.hasCode(state.boards,'TA')||state.role==='admin')await loadOperations(token);else renderOperationsLocked();
     }catch(_error){$('user-role').textContent='Sesión por validar';$('access-status').textContent='Validación pendiente';}
   }
+
+  function renderOperationsLocked(){var panel=$('operation-panel');panel.setAttribute('aria-busy','false');panel.innerHTML='<div class="operation-message"><i class="ti ti-shield-lock"></i><span>Operación semanal no está incluida en los permisos de esta cuenta.</span></div>';}
 
   function taskDueLabel(task){var days=window.YodOperations.daysUntil(task);if(days==null)return {text:'Sin fecha',overdue:false};if(days<0)return {text:Math.abs(days)+' d vencida',overdue:true};if(days===0)return {text:'Vence hoy',overdue:false};return {text:'En '+days+' d',overdue:false};}
   function renderOperations(result){
@@ -85,7 +89,7 @@
 
   function openSearch(){var dialog=$('search-dialog');dialog.showModal();$('search-input').value='';buildSearch('');setTimeout(function(){$('search-input').focus();},0);}
   $('welcome-title').firstChild.textContent=greeting()+', ';
-  function refreshAll(){loadCatalog();var token='';try{token=localStorage.getItem(TOKEN_KEY)||'';}catch(_error){}if(token)loadOperations(token);}
+  function refreshAll(){loadCatalog();var token='';try{token=localStorage.getItem(TOKEN_KEY)||'';}catch(_error){}if(token&&(window.YodAccessPolicy.hasCode(state.boards,'TA')||state.role==='admin'))loadOperations(token);}
   $('refresh').addEventListener('click',refreshAll);$('mobile-refresh').addEventListener('click',refreshAll);$('search-trigger').addEventListener('click',openSearch);$('search-input').addEventListener('input',function(e){buildSearch(e.target.value);});
   document.addEventListener('keydown',function(e){if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();openSearch();}});
   loadIdentity();loadCatalog();

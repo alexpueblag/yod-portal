@@ -1,7 +1,15 @@
 'use strict';
 const assert=require('node:assert/strict');
 require('./os/adapters/operations.js');
+require('./os/access-policy.js');
 const api=globalThis.YodOperations;
+const access=globalThis.YodAccessPolicy;
+assert.equal(access.canOpen('TA','SYS-TAREAS','vista'),true);
+assert.equal(access.canOpen('FL','SYS-TAREAS','vista'),false);
+assert.equal(access.canOpen('MK','SYS-MARKETING','vista'),true);
+assert.equal(access.canOpen('TA','SYS-INVERSION','vista'),false);
+assert.equal(access.canOpen('*','SYS-INVERSION','vista'),true);
+assert.equal(access.canOpen('','SYS-INVERSION','admin'),true);
 assert.equal(api.normalizeStatus('Subido'),'En standby');
 assert.equal(api.normalizeStatus('Completado'),'Terminado');
 const month=new Intl.DateTimeFormat('es-MX',{month:'long'}).format(new Date());
