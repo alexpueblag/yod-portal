@@ -32,14 +32,28 @@
     link.append(top,title,desc,foot);return link;
   }
 
+  function sidebarNode(row){
+    var url=window.PortalCore.resolveUrl(row);if(!url)return null;
+    var a=document.createElement('a');a.className='nav-item';a.href=url;a.rel='noopener';a.dataset.systemId=row.system_id;
+    var i=document.createElement('i');i.className='ti ti-'+(ICONS[row.system_id]||window.PortalCore.safeIcon(row.icono));
+    var s=document.createElement('span');s.textContent=safeText(row.titulo_portal)||safeText(row.system_id);
+    a.append(i,s);return a;
+  }
+  function renderSidebarModules(){
+    var box=$('nav-modules');if(!box)return;box.replaceChildren();
+    if(!state.profileReady){var h=document.createElement('span');h.className='nav-loading';h.textContent='Inicia sesión para ver tus tableros';box.appendChild(h);return;}
+    if(!state.modules.length){var e=document.createElement('span');e.className='nav-loading';e.textContent='Sin tableros disponibles';box.appendChild(e);return;}
+    state.modules.forEach(function(row){var n=sidebarNode(row);if(n)box.appendChild(n);});
+  }
+
   function renderModules(rows){
     var grid=$('module-grid');grid.replaceChildren();
     state.rawRows=Array.isArray(rows)?rows:state.rawRows;
-    if(!state.profileReady){state.modules=[];var waiting=document.createElement('div');waiting.className='empty-state';waiting.textContent='Inicie sesión para consultar sus módulos autorizados.';grid.appendChild(waiting);grid.setAttribute('aria-busy','false');$('module-count').textContent='—';return;}
+    if(!state.profileReady){state.modules=[];var waiting=document.createElement('div');waiting.className='empty-state';waiting.textContent='Inicie sesión para consultar sus módulos autorizados.';grid.appendChild(waiting);grid.setAttribute('aria-busy','false');$('module-count').textContent='—';renderSidebarModules();return;}
     state.modules=window.PortalCore.cleanRows(state.rawRows).filter(function(row){return Boolean(window.PortalCore.resolveUrl(row))&&window.YodAccessPolicy.canOpen(state.boards,row.system_id,state.role);});
     state.modules.forEach(function(row){var node=moduleNode(row);if(node)grid.appendChild(node);});
     if(!grid.children.length){var empty=document.createElement('div');empty.className='empty-state';empty.textContent='No hay módulos disponibles en Control Maestro.';grid.appendChild(empty);}
-    grid.setAttribute('aria-busy','false');$('module-count').textContent=String(state.modules.length);buildSearch('');
+    grid.setAttribute('aria-busy','false');$('module-count').textContent=String(state.modules.length);renderSidebarModules();buildSearch('');
   }
 
   async function loadCatalog(){
