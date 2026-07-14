@@ -27,7 +27,7 @@
   }
   async function load(token){
     if(!token)throw new Error('sin_sesion');
-    var response=await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({k:token,action:'getAll'}),redirect:'follow'});
+    var response=await fetch(ENDPOINT,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({k:token,action:'getAll'}),redirect:'follow',credentials:'omit'});
     if(!response.ok)throw new Error('HTTP '+response.status);var data=await response.json();if(!data.ok)throw new Error(data.error||'operacion');
     var tasks=Array.isArray(data.tasks)?data.tasks:[];return {tasks:tasks,summary:summarize(tasks),updatedAt:new Date()};
   }

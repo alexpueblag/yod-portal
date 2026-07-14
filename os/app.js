@@ -60,7 +60,7 @@
     var token='';try{token=localStorage.getItem(TOKEN_KEY)||'';}catch(_error){}
     if(!token){$('access-status').textContent='Requiere acceso';state.profileReady=false;return;}
     try{
-      var response=await fetch(PORTERO_ENDPOINT+'?recurso=canje&t='+encodeURIComponent(token),{cache:'no-store'});var data=await response.json();
+      var response=await fetch(PORTERO_ENDPOINT+'?recurso=canje&t='+encodeURIComponent(token),{cache:'no-store',credentials:'omit'});var data=await response.json();
       if(!data||!data.ok)throw new Error('sesión');state.role=data.rol||'vista';state.boards=data.boards||'';state.profileReady=true;
       var name=data.nombre||data.correo||'Equipo YOD';$('user-name').textContent=name;$('user-role').textContent=state.role;$('avatar').textContent=initials(name);$('first-name').textContent=name.split(/\s|@/)[0];$('access-status').textContent=state.role==='admin'?'Dirección':'Autorizado';
       var persona=state.role==='admin'?'direccion':'colaborador';
