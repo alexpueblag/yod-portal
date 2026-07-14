@@ -74,8 +74,11 @@
     var token='';try{token=localStorage.getItem(TOKEN_KEY)||'';}catch(_error){}
     if(!token){$('access-status').textContent='Requiere acceso';state.profileReady=false;return;}
     try{
-      var response=await fetch(PORTERO_ENDPOINT+'?recurso=canje&t='+encodeURIComponent(token),{cache:'no-store',credentials:'omit'});var data=await response.json();
-      if(!data||!data.ok)throw new Error('sesión');state.role=data.rol||'vista';state.boards=data.boards||'';state.profileReady=true;
+      var response=await fetch(PORTERO_ENDPOINT+'?recurso=canje&t='+encodeURIComponent(token),{cache:'no-store',credentials:'omit'});
+      var raw=await response.text();var data=null;try{data=JSON.parse(raw);}catch(_p){}
+      var diag=response.ok?(data===null?'respuesta-no-JSON':(data.ok?'':('canje:'+(data.error||'ok=false')))):('HTTP-'+response.status);
+      if(!data||!data.ok){console.warn('[YOD OS] canje falló →',diag,{status:response.status,muestra:String(raw).slice(0,200)});var e2=new Error(diag);e2._diag=diag;throw e2;}
+      state.role=data.rol||'vista';state.boards=data.boards||'';state.profileReady=true;
       var name=data.nombre||data.correo||'Equipo YOD';$('user-name').textContent=name;$('user-role').textContent=state.role;$('avatar').textContent=initials(name);$('first-name').textContent=name.split(/\s|@/)[0];$('access-status').textContent=state.role==='admin'?'Dirección':'Autorizado';
       var persona=state.role==='admin'?'direccion':'colaborador';
       document.documentElement.setAttribute('data-persona',persona);
@@ -87,7 +90,7 @@
       var visibleQuick=0;document.querySelectorAll('.quick-card[data-system-id]').forEach(function(el){var allowed=window.YodAccessPolicy.canOpen(state.boards,el.dataset.systemId,state.role);el.classList.toggle('hidden',!allowed);if(allowed)visibleQuick++;});$('quick-section').classList.toggle('hidden',visibleQuick===0);
       if(state.rawRows.length)renderModules(state.rawRows);
       var requests=[loadPulse(token)];if(window.YodAccessPolicy.hasCode(state.boards,'TA')||state.role==='admin')requests.push(loadOperations(token));else renderOperationsLocked();await Promise.allSettled(requests);
-    }catch(_error){$('user-role').textContent='Sesión por validar';$('access-status').textContent='Validación pendiente';}
+    }catch(err){var d=(err&&err._diag)||'error';$('user-role').textContent='Sesión por validar';$('access-status').textContent='Pendiente ('+d+')';$('access-status').title='Diagnóstico del canje: '+d+' — revisa la consola para el detalle.';console.warn('[YOD OS] identidad no validada:',d,err);}
   }
 
   function renderOperationsLocked(){var panel=$('operation-panel');panel.setAttribute('aria-busy','false');panel.innerHTML='<div class="operation-message"><i class="ti ti-shield-lock"></i><span>Operación semanal no está incluida en los permisos de esta cuenta.</span></div>';}
