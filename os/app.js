@@ -59,8 +59,21 @@
       var response=await fetch(PORTERO_ENDPOINT+'?recurso=canje&t='+encodeURIComponent(token),{cache:'no-store'});var data=await response.json();
       if(!data||!data.ok)throw new Error('sesión');state.role=data.rol||'vista';
       var name=data.nombre||data.correo||'Equipo YOD';$('user-name').textContent=name;$('user-role').textContent=state.role;$('avatar').textContent=initials(name);$('first-name').textContent=name.split(/\s|@/)[0];$('access-status').textContent=state.role==='admin'?'Dirección':'Autorizado';
-      document.querySelectorAll('.admin-only').forEach(function(el){el.classList.toggle('hidden',state.role!=='admin');});
+      document.querySelectorAll('.admin-only').forEach(function(el){el.classList.toggle('hidden',state.role!=='admin');});await loadOperations(token);
     }catch(_error){$('user-role').textContent='Sesión por validar';$('access-status').textContent='Validación pendiente';}
+  }
+
+  function taskDueLabel(task){var days=window.YodOperations.daysUntil(task);if(days==null)return {text:'Sin fecha',overdue:false};if(days<0)return {text:Math.abs(days)+' d vencida',overdue:true};if(days===0)return {text:'Vence hoy',overdue:false};return {text:'En '+days+' d',overdue:false};}
+  function renderOperations(result){
+    var panel=$('operation-panel'),summary=result.summary;panel.replaceChildren();panel.setAttribute('aria-busy','false');
+    var metrics=document.createElement('div');metrics.className='operation-metrics';[['Abiertas',summary.open],['Vencidas',summary.overdue],['Próximos 7 días',summary.dueSoon],['En revisión',summary.review]].forEach(function(item){var box=document.createElement('div');box.className='operation-metric';var label=document.createElement('span');label.textContent=item[0];var value=document.createElement('strong');value.textContent=String(item[1]);box.append(label,value);metrics.appendChild(box);});panel.appendChild(metrics);
+    var list=document.createElement('div');list.className='task-list';summary.priority.forEach(function(task){var row=document.createElement('div');row.className='task-row';var title=document.createElement('div');title.className='task-title';var strong=document.createElement('strong');strong.textContent=task.actividad||task.entregable||'Tarea sin título';var project=document.createElement('small');project.textContent=task.proyecto||task.empresa||'Sin proyecto';title.append(strong,project);var person=document.createElement('span');person.className='task-person';person.textContent=task.responsable||'Sin responsable';var status=document.createElement('span');status.className='task-status';status.textContent=window.YodOperations.normalizeStatus(task.estado);var dueInfo=taskDueLabel(task);var due=document.createElement('span');due.className='task-due'+(dueInfo.overdue?' overdue':'');due.textContent=dueInfo.text;row.append(title,person,status,due);list.appendChild(row);});
+    if(!summary.priority.length){var empty=document.createElement('div');empty.className='operation-message';empty.textContent='No hay tareas abiertas que requieran atención.';list.appendChild(empty);}panel.appendChild(list);
+  }
+  async function loadOperations(token){
+    var panel=$('operation-panel');panel.setAttribute('aria-busy','true');
+    try{renderOperations(await window.YodOperations.load(token));}
+    catch(error){panel.setAttribute('aria-busy','false');panel.innerHTML='<div class="operation-message"><i class="ti ti-shield-lock"></i><span>No se pudo consultar Operación semanal con esta sesión. El tablero original permanece intacto.</span></div>';}
   }
 
   function buildSearch(query){
@@ -72,7 +85,8 @@
 
   function openSearch(){var dialog=$('search-dialog');dialog.showModal();$('search-input').value='';buildSearch('');setTimeout(function(){$('search-input').focus();},0);}
   $('welcome-title').firstChild.textContent=greeting()+', ';
-  $('refresh').addEventListener('click',loadCatalog);$('mobile-refresh').addEventListener('click',loadCatalog);$('search-trigger').addEventListener('click',openSearch);$('search-input').addEventListener('input',function(e){buildSearch(e.target.value);});
+  function refreshAll(){loadCatalog();var token='';try{token=localStorage.getItem(TOKEN_KEY)||'';}catch(_error){}if(token)loadOperations(token);}
+  $('refresh').addEventListener('click',refreshAll);$('mobile-refresh').addEventListener('click',refreshAll);$('search-trigger').addEventListener('click',openSearch);$('search-input').addEventListener('input',function(e){buildSearch(e.target.value);});
   document.addEventListener('keydown',function(e){if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();openSearch();}});
   loadIdentity();loadCatalog();
 })();

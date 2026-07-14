@@ -63,6 +63,16 @@
           <div><span>Acceso</span><strong id="access-status">Validando</strong></div>
         </section>
 
+        <section class="section operation-section" id="operacion" aria-labelledby="operation-title">
+          <div class="section-head">
+            <div><p class="eyebrow">Información en vivo</p><h2 id="operation-title">Operación semanal</h2></div>
+            <a class="section-link" href="https://alexpueblag.github.io/board-aurum/">Abrir tablero completo <i class="ti ti-arrow-up-right"></i></a>
+          </div>
+          <div class="operation-panel" id="operation-panel" aria-live="polite" aria-busy="true">
+            <div class="operation-message"><i class="ti ti-loader-2 spin"></i><span>Esperando una sesión autorizada para consultar las tareas.</span></div>
+          </div>
+        </section>
+
         <section class="section" id="modulos" aria-labelledby="modules-title">
           <div class="section-head">
             <div><p class="eyebrow">Espacios de trabajo</p><h2 id="modules-title">Sus módulos</h2></div>
@@ -102,6 +112,7 @@
   </dialog>
 
   <script src="../portal-core.js?v=1.0.2"></script>
+  <script src="adapters/operations.js?v=0.1.0"></script>
   <script src="app.js?v=0.1.0"></script>
   <script src="https://alexpueblag.github.io/potenciales-yod/portero.js"></script>
 </body>
