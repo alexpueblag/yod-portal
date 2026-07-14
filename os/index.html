@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.24.0/dist/tabler-icons.min.css">
-  <link rel="stylesheet" href="styles.css?v=0.2.0">
+  <link rel="stylesheet" href="styles.css?v=0.3.0">
 </head>
 <body>
   <div class="app-shell">
@@ -39,6 +39,7 @@
           <i class="ti ti-search"></i><span>Buscar un módulo…</span><kbd>⌘ K</kbd>
         </button>
         <div class="top-actions">
+          <span class="role-chip hidden" id="role-chip"></span>
           <span class="connection" id="connection"><i class="ti ti-loader-2 spin"></i> Conectando</span>
           <button class="icon-button" id="refresh" type="button" title="Actualizar datos" aria-label="Actualizar datos"><i class="ti ti-refresh"></i></button>
         </div>
@@ -47,9 +48,9 @@
       <div class="content">
         <section class="hero" aria-labelledby="welcome-title">
           <div>
-            <p class="eyebrow">Centro de operación</p>
+            <p class="eyebrow" id="hero-eyebrow">Centro de operación</p>
             <h1 id="welcome-title">Buenas tardes, <span id="first-name">equipo</span>.</h1>
-            <p class="hero-copy">Un solo acceso para entrar a la operación completa, sin mover ni duplicar la información de sus tableros.</p>
+            <p class="hero-copy" id="hero-copy">Un solo acceso para entrar a la operación completa, sin mover ni duplicar la información de sus tableros.</p>
           </div>
           <div class="freshness">
             <span>Última actualización</span>
@@ -133,7 +134,7 @@
   <script src="adapters/operations.js?v=0.1.0"></script>
   <script src="adapters/finance.js?v=0.1.0"></script>
   <script src="adapters/marketing.js?v=0.1.0"></script>
-  <script src="app.js?v=0.2.0"></script>
+  <script src="app.js?v=0.3.0"></script>
   <script src="https://alexpueblag.github.io/potenciales-yod/portero.js?v=779fed3"></script>
 </body>
 </html>

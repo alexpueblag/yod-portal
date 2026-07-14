@@ -63,6 +63,12 @@
       var response=await fetch(PORTERO_ENDPOINT+'?recurso=canje&t='+encodeURIComponent(token),{cache:'no-store'});var data=await response.json();
       if(!data||!data.ok)throw new Error('sesión');state.role=data.rol||'vista';state.boards=data.boards||'';state.profileReady=true;
       var name=data.nombre||data.correo||'Equipo YOD';$('user-name').textContent=name;$('user-role').textContent=state.role;$('avatar').textContent=initials(name);$('first-name').textContent=name.split(/\s|@/)[0];$('access-status').textContent=state.role==='admin'?'Dirección':'Autorizado';
+      var persona=state.role==='admin'?'direccion':'colaborador';
+      document.documentElement.setAttribute('data-persona',persona);
+      var chip=$('role-chip');chip.className='role-chip '+persona;chip.textContent=persona==='direccion'?'Dirección':'Colaborador';
+      $('user-role').textContent=persona==='direccion'?'Dirección':'Colaborador';
+      if(persona==='direccion'){$('hero-eyebrow').textContent='Centro de operación';$('hero-copy').textContent='Un solo acceso para entrar a la operación completa, sin mover ni duplicar la información de sus tableros.';}
+      else{$('hero-eyebrow').textContent='Tu espacio de trabajo';$('hero-copy').textContent='Tus módulos y tus pendientes de la semana, en un solo lugar. Abre lo que necesites.';}
       document.querySelectorAll('.admin-only').forEach(function(el){el.classList.toggle('hidden',state.role!=='admin');});
       var visibleQuick=0;document.querySelectorAll('.quick-card[data-system-id]').forEach(function(el){var allowed=window.YodAccessPolicy.canOpen(state.boards,el.dataset.systemId,state.role);el.classList.toggle('hidden',!allowed);if(allowed)visibleQuick++;});$('quick-section').classList.toggle('hidden',visibleQuick===0);
       if(state.rawRows.length)renderModules(state.rawRows);
@@ -92,7 +98,7 @@
   async function loadFinance(token){try{renderFinance(await window.YodFinance.load(token));}catch(_error){renderPulseError('finance-card','finance-panel','Tesorería');}}
   async function loadMarketing(token){try{renderMarketing(await window.YodMarketing.load(token));}catch(_error){renderPulseError('marketing-card','marketing-panel','Marketing');}}
   async function loadPulse(token){
-    var financeAllowed=state.role==='admin'||window.YodAccessPolicy.hasCode(state.boards,'FL');var marketingAllowed=state.role==='admin'||window.YodAccessPolicy.hasCode(state.boards,'MK');
+    var financeAllowed=state.role==='admin';var marketingAllowed=state.role==='admin'||window.YodAccessPolicy.hasCode(state.boards,'MK');
     $('finance-card').classList.toggle('hidden',!financeAllowed);$('marketing-card').classList.toggle('hidden',!marketingAllowed);$('pulso').classList.toggle('hidden',!financeAllowed&&!marketingAllowed);
     var requests=[];if(financeAllowed)requests.push(loadFinance(token));if(marketingAllowed)requests.push(loadMarketing(token));await Promise.allSettled(requests);
   }
