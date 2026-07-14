@@ -26,17 +26,19 @@
   function safeByManifest(value,id,manifest){var prefix=manifest[String(id||'')];if(!value||!prefix)return '';try{var u=new URL(String(value)),href=u.href;return u.protocol==='https:'&&href.indexOf(prefix)===0?href:'';}catch(_error){return '';}}
   function safeUrl(value,systemId){return safeByManifest(value,systemId,DESTINATIONS);}
   function safeTrackUrl(value,projectId){return safeByManifest(value,projectId,TRACK_DESTINATIONS);}
-  // Resuelve el destino: url del Sheet si es válida contra el allowlist; si viene vacía, cae al manifiesto (URL fija y segura).
-  function resolveUrl(row){return safeUrl(row&&row.url,row&&row.system_id)||DESTINATIONS[String(row&&row.system_id||'')]||'';}
+  // Resuelve el destino: la URL del Sheet debe coincidir con el allowlist. Si viene vacía,
+  // cae al manifiesto fijo; una URL explícita inválida nunca se sustituye silenciosamente.
+  function resolveUrl(row){var value=row&&row.url;return value?safeUrl(value,row&&row.system_id):(DESTINATIONS[String(row&&row.system_id||'')]||'');}
   function resolveTrackUrl(row){return safeTrackUrl(row&&row.url,row&&row.project_id)||TRACK_DESTINATIONS[String(row&&row.project_id||'')]||'';}
-  // Una tarjeta abre si tiene destino conocido y NO está explícitamente en mantenimiento (el estado es etiqueta, no candado de navegación).
+  // Control Maestro gobierna también la disponibilidad: solo Activo abre. Los estados
+  // Mantenimiento/Revisión se muestran, pero no se convierten en enlaces.
   function safeThumb(value){var v=String(value||'');return /^thumbs\/[a-z0-9._-]+$/i.test(v)?v:'thumbs/track.svg';}
   function safeIcon(value){var v=String(value||'').toLowerCase();return /^[a-z0-9-]+$/.test(v)?v:'layout-dashboard';}
-  // El portal es un directorio: una tarjeta abre si tiene destino conocido (allowlist). El estado es etiqueta, no candado.
-  function enabled(row){return Boolean(resolveUrl(row));}
+  function enabled(row){return state(row&&row.estado)==='activo'&&Boolean(resolveUrl(row));}
   function badge(row){
     if(enabled(row))return {cls:'active',icon:'arrow-up-right',text:'Abrir'};
     var s=state(row.estado);
+    if(s==='activo'&&!safeUrl(row&&row.url,row&&row.system_id)&&row&&row.url)return {cls:'maintenance',icon:'alert-triangle',text:'URL inválida'};
     if(s==='mantenimiento')return {cls:'maintenance',icon:'shield-lock',text:'Mantenimiento'};
     if(s==='revisión'||s==='revision')return {cls:'review',icon:'clipboard-check',text:'En revisión'};
     return {cls:'soon',icon:'clock',text:'Próximamente'};
