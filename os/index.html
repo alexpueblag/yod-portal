@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.24.0/dist/tabler-icons.min.css">
-  <link rel="stylesheet" href="styles.css?v=0.1.0">
+  <link rel="stylesheet" href="styles.css?v=0.2.0">
 </head>
 <body>
   <div class="app-shell">
@@ -61,6 +61,23 @@
           <div><span>Módulos disponibles</span><strong id="module-count">—</strong></div>
           <div><span>Fuente</span><strong>Control Maestro</strong></div>
           <div><span>Acceso</span><strong id="access-status">Validando</strong></div>
+        </section>
+
+        <section class="section pulse-section hidden" id="pulso" aria-labelledby="pulse-title">
+          <div class="section-head">
+            <div><p class="eyebrow">Decisiones de hoy</p><h2 id="pulse-title">Pulso del negocio</h2></div>
+            <p>Datos consultados en línea desde los controladores originales; ninguna cifra se copia a este portal.</p>
+          </div>
+          <div class="pulse-grid">
+            <article class="pulse-card hidden" id="finance-card" aria-busy="true">
+              <header><span class="pulse-icon"><i class="ti ti-wallet"></i></span><div><p>Tesorería</p><h3>Posición financiera</h3></div><a href="https://alexpueblag.github.io/board-flujo-yod/" aria-label="Abrir Tesorería"><i class="ti ti-arrow-up-right"></i></a></header>
+              <div class="pulse-body" id="finance-panel"><div class="pulse-message"><i class="ti ti-loader-2 spin"></i> Consultando Flujo YOD…</div></div>
+            </article>
+            <article class="pulse-card hidden" id="marketing-card" aria-busy="true">
+              <header><span class="pulse-icon"><i class="ti ti-speakerphone"></i></span><div><p>Marketing</p><h3>Demanda y conversión</h3></div><a href="https://alexpueblag.github.io/aurum-board/" aria-label="Abrir Marketing"><i class="ti ti-arrow-up-right"></i></a></header>
+              <div class="pulse-body" id="marketing-panel"><div class="pulse-message"><i class="ti ti-loader-2 spin"></i> Consultando CRM YOD…</div></div>
+            </article>
+          </div>
         </section>
 
         <section class="section operation-section" id="operacion" aria-labelledby="operation-title">
@@ -114,7 +131,9 @@
   <script src="../portal-core.js?v=1.0.2"></script>
   <script src="access-policy.js?v=0.1.0"></script>
   <script src="adapters/operations.js?v=0.1.0"></script>
-  <script src="app.js?v=0.1.0"></script>
+  <script src="adapters/finance.js?v=0.1.0"></script>
+  <script src="adapters/marketing.js?v=0.1.0"></script>
+  <script src="app.js?v=0.2.0"></script>
   <script src="https://alexpueblag.github.io/potenciales-yod/portero.js"></script>
 </body>
 </html>
