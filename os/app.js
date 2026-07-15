@@ -98,6 +98,7 @@
   function taskDueLabel(task){var days=window.YodOperations.daysUntil(task);if(days==null)return {text:'Sin fecha',overdue:false};if(days<0)return {text:Math.abs(days)+' d vencida',overdue:true};if(days===0)return {text:'Vence hoy',overdue:false};return {text:'En '+days+' d',overdue:false};}
   function renderOperations(result){
     var panel=$('operation-panel'),summary=result.summary;panel.replaceChildren();panel.setAttribute('aria-busy','false');
+    if(result.source==='cache'){var note=document.createElement('div');note.className='operation-note';note.innerHTML='<i class="ti ti-history"></i><span>Mostrando el último resumen guardado en este dispositivo. La consulta en vivo no respondió; abre el tablero para reintentar.</span>';panel.appendChild(note);}
     var metrics=document.createElement('div');metrics.className='operation-metrics';[['Abiertas',summary.open],['Vencidas',summary.overdue],['Próximos 7 días',summary.dueSoon],['En revisión',summary.review]].forEach(function(item){var box=document.createElement('div');box.className='operation-metric';var label=document.createElement('span');label.textContent=item[0];var value=document.createElement('strong');value.textContent=String(item[1]);box.append(label,value);metrics.appendChild(box);});panel.appendChild(metrics);
     var list=document.createElement('div');list.className='task-list';summary.priority.forEach(function(task){var row=document.createElement('div');row.className='task-row';var title=document.createElement('div');title.className='task-title';var strong=document.createElement('strong');strong.textContent=task.actividad||task.entregable||'Tarea sin título';var project=document.createElement('small');project.textContent=task.proyecto||task.empresa||'Sin proyecto';title.append(strong,project);var person=document.createElement('span');person.className='task-person';person.textContent=task.responsable||'Sin responsable';var status=document.createElement('span');status.className='task-status';status.textContent=window.YodOperations.normalizeStatus(task.estado);var dueInfo=taskDueLabel(task);var due=document.createElement('span');due.className='task-due'+(dueInfo.overdue?' overdue':'');due.textContent=dueInfo.text;row.append(title,person,status,due);list.appendChild(row);});
     if(!summary.priority.length){var empty=document.createElement('div');empty.className='operation-message';empty.textContent='No hay tareas abiertas que requieran atención.';list.appendChild(empty);}panel.appendChild(list);
@@ -105,7 +106,12 @@
   async function loadOperations(token){
     var panel=$('operation-panel');panel.setAttribute('aria-busy','true');
     try{renderOperations(await window.YodOperations.load(token));}
-    catch(error){panel.setAttribute('aria-busy','false');panel.innerHTML='<div class="operation-message"><i class="ti ti-shield-lock"></i><span>No se pudo consultar Operación semanal con esta sesión. El tablero original permanece intacto.</span></div>';}
+    catch(error){
+      var diag=(error&&(error._diag||error.message))||'error';
+      panel.setAttribute('aria-busy','false');
+      panel.innerHTML='<div class="operation-message"><i class="ti ti-shield-lock"></i><span>No se pudo consultar Operación semanal con esta sesión ('+String(diag)+'). El tablero original permanece intacto.</span></div>';
+      console.warn('[YOD OS] Operación no cargó →',diag,error);
+    }
   }
 
   function pulseMetric(label,value,note,kind){var box=document.createElement('div');box.className='pulse-metric'+(kind?' '+kind:'');var name=document.createElement('span');name.textContent=label;var strong=document.createElement('strong');strong.textContent=value;box.append(name,strong);if(note){var small=document.createElement('small');small.textContent=note;box.appendChild(small);}return box;}
