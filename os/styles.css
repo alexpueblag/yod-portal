@@ -62,3 +62,12 @@ a:focus-visible,button:focus-visible,input:focus-visible,[tabindex]:focus-visibl
 .ops-scope button:hover{border-color:var(--gold)}
 .ops-scope button.on{background:var(--ink);color:#f6f3ed;border-color:transparent}
 @media(pointer:coarse){.ops-scope button{min-height:40px}}
+
+/* "Soy: [nombre]" — identidad del resumen personal (enjambre UX / feedback) */
+.ops-whoami{display:flex;align-items:center;gap:8px;padding:10px 16px 0;font-size:12.5px;color:var(--muted)}
+.ops-whoami i{font-size:16px;color:var(--gold)}
+.ops-whoami select{font:inherit;font-size:13px;font-weight:600;color:var(--ink);background:var(--card);border:1px solid var(--line);border-radius:8px;padding:6px 10px;min-height:36px;cursor:pointer}
+.ops-whoami select:hover{border-color:var(--gold)}
+.ops-whoami.ask{color:#7a5f28}
+.ops-whoami.ask select{border-color:var(--gold);background:#fbf4e4}
+@media(pointer:coarse){.ops-whoami select{min-height:40px;font-size:16px}}

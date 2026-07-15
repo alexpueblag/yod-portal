@@ -150,6 +150,17 @@
     toggle.innerHTML='<button type="button" data-scope="mias" class="'+(scope==='mias'?'on':'')+'">Mis tareas</button><button type="button" data-scope="equipo" class="'+(scope==='equipo'?'on':'')+'">Todo el equipo</button>';
     toggle.querySelectorAll('button').forEach(function(b){b.addEventListener('click',function(){if(state.opsScope===b.dataset.scope)return;state.opsScope=b.dataset.scope;renderOpsScoped(state._opsSource,state._opsUpdatedAt);});});
     panel.appendChild(toggle);
+    // "Soy: [nombre]" — elige tu nombre del tablero para que el resumen sea tuyo.
+    // Útil cuando entras como propietario/clave maestra (aún sin nombre personal).
+    if(scope==='mias'&&(result.responsables||[]).length){
+      var cur=result.personName||'';
+      var opts=result.responsables.map(function(r){var me=window.YodOperations.isMine(r,cur);return '<option'+(me?' selected':'')+'>'+String(r).replace(/[&<>"]/g,'')+'</option>';}).join('');
+      var who=document.createElement('div');who.className='ops-whoami'+(result.personGeneric?' ask':'');
+      who.innerHTML='<i class="ti ti-user-circle"></i><span>Soy</span><select class="ops-whoami-sel" aria-label="Tu nombre en el tablero"><option value="">— elige tu nombre —</option>'+opts+'</select>';
+      var sel=who.querySelector('select');
+      sel.addEventListener('change',function(){try{if(sel.value)localStorage.setItem('yod_ops_me',sel.value);else localStorage.removeItem('yod_ops_me');}catch(e){}renderOpsScoped(state._opsSource,state._opsUpdatedAt);});
+      panel.appendChild(who);
+    }
     if(result.source==='cache'){var note=document.createElement('div');note.className='operation-note';note.innerHTML='<i class="ti ti-history"></i><span>Mostrando el último resumen guardado en este dispositivo. La consulta en vivo no respondió; abre el tablero para reintentar.</span>';panel.appendChild(note);}
     var metrics=document.createElement('div');metrics.className='operation-metrics';[['Abiertas',summary.open],['Vencidas',summary.overdue],['Próximos 7 días',summary.dueSoon],['En revisión',summary.review]].forEach(function(item){var box=document.createElement('div');box.className='operation-metric';var label=document.createElement('span');label.textContent=item[0];var value=document.createElement('strong');value.textContent=String(item[1]);box.append(label,value);metrics.appendChild(box);});panel.appendChild(metrics);
     var list=document.createElement('div');list.className='task-list';summary.priority.forEach(function(task){var row=document.createElement('div');row.className='task-row';var title=document.createElement('div');title.className='task-title';var strong=document.createElement('strong');strong.textContent=task.actividad||task.entregable||'Tarea sin título';var project=document.createElement('small');project.textContent=task.proyecto||task.empresa||'Sin proyecto';title.append(strong,project);var person=document.createElement('span');person.className='task-person';person.textContent=task.responsable||'Sin responsable';var status=document.createElement('span');status.className='task-status';status.textContent=window.YodOperations.normalizeStatus(task.estado);var dueInfo=taskDueLabel(task);var due=document.createElement('span');due.className='task-due'+(dueInfo.overdue?' overdue':'');due.textContent=dueInfo.text;row.append(title,person,status,due);list.appendChild(row);});
@@ -165,20 +176,27 @@
       list.appendChild(empty);
     }panel.appendChild(list);
   }
+  // Quién soy para el filtro: un nombre elegido a mano (guardado en el dispositivo)
+  // gana sobre el del canje. Sirve cuando entras como propietario/clave maestra y
+  // el Portero aún no devuelve tu nombre real.
+  function myName(){ try{ var o=localStorage.getItem('yod_ops_me'); if(o) return o; }catch(e){} return state.personName||''; }
+  function nameIsGeneric(n){ n=String(n||'').toLowerCase(); return !n||n==='propietario'||n==='clave maestra'; }
+  function uniqueResponsables(tasks){ var out=[],seen={}; (tasks||[]).forEach(function(t){var r=String(t&&t.responsable||'').trim();if(r&&!seen[r.toLowerCase()]){seen[r.toLowerCase()]=1;out.push(r);}}); return out.sort(); }
+
   // Pinta el resumen según el alcance elegido (mías/equipo), sin volver a pedir datos.
   function renderOpsScoped(source,updatedAt){
     state._opsSource=source;state._opsUpdatedAt=updatedAt;
     var all=state.allTasks||[];var scope=state.opsScope||'mias';
     var titulo=$('operation-title'),eyebrow=titulo&&titulo.closest('.section-head')?titulo.closest('.section-head').querySelector('.eyebrow'):null;
-    var tasks,mine=false;
+    var tasks,mine=false;var who=myName();
     if(scope==='mias'){
-      tasks=window.YodOperations.tasksForPerson(all,state.personName||'');mine=true;
+      tasks=window.YodOperations.tasksForPerson(all,who);mine=true;
       if(titulo)titulo.textContent='Tus tareas de la semana';if(eyebrow)eyebrow.textContent='Lo tuyo, primero';
     }else{
       tasks=all;
       if(titulo)titulo.textContent='Operación semanal · equipo';if(eyebrow)eyebrow.textContent='Todo el equipo';
     }
-    renderOperations({tasks:tasks,summary:window.YodOperations.summarize(tasks),updatedAt:updatedAt,source:source,mine:mine,personName:state.personName,totalEquipo:all.length,scope:scope});
+    renderOperations({tasks:tasks,summary:window.YodOperations.summarize(tasks),updatedAt:updatedAt,source:source,mine:mine,personName:who,personGeneric:nameIsGeneric(who),responsables:uniqueResponsables(all),totalEquipo:all.length,scope:scope});
   }
   async function loadOperations(token){
     var panel=$('operation-panel');panel.setAttribute('aria-busy','true');
