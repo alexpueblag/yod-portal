@@ -132,5 +132,7 @@
   function refreshAll(){loadCatalog();var token='';try{token=localStorage.getItem(TOKEN_KEY)||'';}catch(_error){}if(!token||!state.profileReady)return;loadPulse(token);if(window.YodAccessPolicy.hasCode(state.boards,'TA')||state.role==='admin')loadOperations(token);}
   $('refresh').addEventListener('click',refreshAll);$('mobile-refresh').addEventListener('click',refreshAll);$('search-trigger').addEventListener('click',openSearch);$('search-input').addEventListener('input',function(e){buildSearch(e.target.value);});
   document.addEventListener('keydown',function(e){if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();openSearch();}});
+  // Cajón lateral en móvil (☰) — misma navegación que escritorio
+  (function(){var shell=document.querySelector('.app-shell');var burger=$('menu-toggle');var scrim=$('nav-scrim');if(!shell)return;function closeNav(){shell.classList.remove('nav-open');}if(burger)burger.addEventListener('click',function(){shell.classList.toggle('nav-open');});if(scrim)scrim.addEventListener('click',closeNav);document.addEventListener('keydown',function(e){if(e.key==='Escape')closeNav();});var nav=$('nav-modules');if(nav)nav.addEventListener('click',function(e){if(e.target.closest('.nav-item'))closeNav();});if(window.matchMedia){var mq=window.matchMedia('(min-width:901px)');mq.addEventListener('change',function(m){if(m.matches)closeNav();});}})();
   loadIdentity();loadCatalog();
 })();
