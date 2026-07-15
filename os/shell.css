@@ -34,6 +34,7 @@ body.yod-on{margin:0;background:#f6f3ed}
 .yod-nav-item span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .yod-nav-item:hover,.yod-nav-item:focus-visible{background:rgba(255,255,255,.07);color:#fff;outline:none}
 .yod-nav-item.active{background:rgba(154,123,63,.2);color:#ead8b5}
+.yod-os-link{color:#ead8b5;margin-bottom:4px}
 .yod-nav-loading{font-size:12px;color:#7c766a;padding:6px 12px;display:flex;align-items:center;gap:7px}
 .yod-foot{margin-top:auto;border-top:1px solid rgba(255,255,255,.08);padding:18px 10px 0;display:flex;
   align-items:center;gap:10px;position:relative;z-index:1}
@@ -60,9 +61,10 @@ body.yod-on{margin:0;background:#f6f3ed}
 .yod-role:before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor}
 .yod-role.direccion{color:#705725;background:var(--yg-soft);border-color:transparent}
 .yod-role.colaborador{color:var(--ymuted);background:var(--ypaper-2)}
-.yod-home{width:39px;height:39px;border:1px solid var(--yline);border-radius:9px;background:var(--ycard);color:var(--yink);
-  display:grid;place-items:center;cursor:pointer;font-size:17px;text-decoration:none}
-.yod-home:hover{border-color:var(--yg)}
+.yod-back,.yod-home{height:39px;border:1px solid var(--yline);border-radius:9px;background:var(--ycard);color:var(--yink);
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;font:12px inherit;text-decoration:none;padding:0 11px;white-space:nowrap}
+.yod-back i,.yod-home i{font-size:17px}
+.yod-back:hover,.yod-home:hover{border-color:var(--yg)}
 /* botón menú (hamburguesa) — solo visible en móvil */
 .yod-burger{display:none;width:40px;height:40px;flex:none;border:1px solid var(--yline);border-radius:10px;background:var(--ycard);
   color:var(--yink);place-items:center;cursor:pointer;font-size:20px;padding:0}
@@ -129,7 +131,7 @@ body.yod-on{margin:0;background:#f6f3ed}
 .yod-sidebar{padding-bottom:calc(20px + env(safe-area-inset-bottom))}
 /* Objetivos táctiles mínimos en dispositivos de dedo */
 @media (pointer:coarse){
-  .yod-burger,.yod-search,.yod-home{min-width:44px;min-height:44px}
+  .yod-burger,.yod-back,.yod-search,.yod-home{min-width:44px;min-height:44px}
   .yod-out{min-width:44px;min-height:44px}
   .yod-nav-item{min-height:44px}
   .yod-topbar{gap:8px}
@@ -144,6 +146,9 @@ body.yod-on{margin:0;background:#f6f3ed}
 .yod-topbar{z-index:100}
 @media(max-width:900px){
   .yod-topbrand{display:flex;flex:1;min-width:0}
+  .yod-back{width:40px;padding:0}
+  .yod-back span,.yod-home span{display:none}
+  .yod-home{width:40px;padding:0}
   .yod-search{flex:none;width:44px;padding:0;justify-content:center}
   .yod-search span,.yod-search kbd{display:none}
 }

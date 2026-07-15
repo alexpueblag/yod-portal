@@ -13,6 +13,7 @@
   var PORTAL = 'https://script.google.com/macros/s/AKfycby5LKYKRwl0EsNgppOIeD_ArST8vSXRgNO4ns8XZbFW4yjfglzu4io_vhabB8h-J792Tw/exec?action=read&resource=Portal';
   var PORTERO = 'https://script.google.com/macros/s/AKfycbwlDDCWWzOWYZsUpBU9uqsQ7aenQ469PF6s6FkNlBFS1_cJSU5njG9oQmuyELy5zlqzFg/exec';
   var OS = 'https://alexpueblag.github.io/yod-portal/os/';
+  var CORPORATE = 'https://yodesarrollo.mx/';
   var DEST = {
     'SYS-POTENCIALES': 'https://alexpueblag.github.io/potenciales-yod/',
     'SYS-TRACK': 'https://alexpueblag.github.io/yod-portal/track-codesarrollos.html',
@@ -142,16 +143,17 @@
     while (document.body.firstChild) { canvas.appendChild(document.body.firstChild); }
 
     var side = el('aside', 'yod-sidebar');
-    side.innerHTML = '<a class="yod-brand" href="' + OS + '"><b>YOD</b><span>OS</span></a>'
-      + '<nav class="yod-nav"><p class="yod-nav-label">Tableros</p><div id="yodNav"><span class="yod-nav-loading"><i class="ti ti-loader-2 yod-spin"></i> Cargando…</span></div></nav>'
+    side.innerHTML = '<a class="yod-brand" href="' + CORPORATE + '" title="Ir a yodesarrollo.mx" aria-label="YOD, ir a yodesarrollo.mx"><b>YOD</b><span>OS</span></a>'
+      + '<nav class="yod-nav"><a class="yod-nav-item yod-os-link" href="' + OS + '"><i class="ti ti-layout-dashboard"></i><span>Inicio YOD OS</span></a><p class="yod-nav-label">Tableros</p><div id="yodNav"><span class="yod-nav-loading"><i class="ti ti-loader-2 yod-spin"></i> Cargando…</span></div></nav>'
       + '<div class="yod-foot"><div class="yod-avatar" id="yodAv">YO</div><div class="yod-id"><strong id="yodName">Equipo YOD</strong><span id="yodRole">Verificando…</span></div><button class="yod-out" id="yodOut" type="button" title="Cerrar sesión" aria-label="Cerrar sesión"><i class="ti ti-logout"></i></button></div>';
 
     var main = el('main', 'yod-main');
     var top = el('header', 'yod-topbar');
     top.innerHTML = '<button class="yod-burger" id="yodBurger" type="button" aria-label="Abrir tableros"><i class="ti ti-menu-2"></i></button>'
-      + '<a class="yod-topbrand" href="' + OS + '" title="Volver a YOD OS"><b>YOD</b><span>OS</span></a>'
+      + '<button class="yod-back" id="yodBack" type="button" title="Volver a la pantalla anterior" aria-label="Volver a la pantalla anterior"><i class="ti ti-arrow-left"></i><span>Atrás</span></button>'
+      + '<a class="yod-topbrand" href="' + CORPORATE + '" title="Ir a yodesarrollo.mx" aria-label="YOD, ir a yodesarrollo.mx"><b>YOD</b><span>OS</span></a>'
       + '<button class="yod-search" id="yodSearch" type="button"><i class="ti ti-search"></i><span>Buscar un tablero…</span><kbd>⌘ K</kbd></button>'
-      + '<div class="yod-top-actions"><span class="yod-role" id="yodChip" style="display:none"></span><a class="yod-home" href="' + OS + '" title="Ir a YOD OS"><i class="ti ti-home-2"></i></a></div>';
+      + '<div class="yod-top-actions"><span class="yod-role" id="yodChip" style="display:none"></span><a class="yod-home" href="' + OS + '" title="Subir a YOD OS" aria-label="Subir a YOD OS"><i class="ti ti-home-2"></i><span>YOD OS</span></a></div>';
     main.appendChild(top); main.appendChild(canvas);
 
     var shell = el('div', 'yod-shell'); shell.appendChild(side); shell.appendChild(main);
@@ -159,12 +161,24 @@
     document.body.appendChild(shell);
 
     wireDrawer(shell, scrim);
+    wireBack();
     var out = document.getElementById('yodOut');
     if (out) out.addEventListener('click', function () { if (confirm('¿Cerrar tu sesión en este dispositivo?')) logout(); });
     // El menú NO se pinta hasta validar la sesión (fail-closed): queda "Cargando…"
     wireSearch();
     loadIdentity();
     loadCatalog(cur);
+  }
+
+  function wireBack() {
+    var back = document.getElementById('yodBack');
+    if (!back) return;
+    var ref = document.referrer || '';
+    var trusted = /^https:\/\/(?:alexpueblag\.github\.io|(?:www\.)?yodesarrollo\.mx)(?:\/|$)/i.test(ref);
+    back.addEventListener('click', function () {
+      if (trusted && history.length > 1) history.back();
+      else location.href = OS;
+    });
   }
 
   function wireDrawer(shell, scrim) {
