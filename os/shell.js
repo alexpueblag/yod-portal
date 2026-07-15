@@ -25,7 +25,31 @@
   };
   var ICON = { 'SYS-POTENCIALES': 'map-2', 'SYS-TRACK': 'route', 'SYS-MIRAMAR': 'building-community', 'SYS-TAREAS': 'checklist', 'SYS-FLUJO': 'wallet', 'SYS-INTERIORES': 'armchair-2', 'SYS-INVERSION': 'presentation-analytics', 'SYS-MARKETING': 'speakerphone' };
   var NAME = { 'SYS-POTENCIALES': 'Potenciales', 'SYS-TRACK': 'Codesarrollos', 'SYS-MIRAMAR': 'Real Miramar', 'SYS-TAREAS': 'Operación', 'SYS-FLUJO': 'Flujo YOD', 'SYS-INTERIORES': 'Interiores', 'SYS-INVERSION': 'Inversionistas', 'SYS-MARKETING': 'Métricas' };
-  var state = { role: '', boards: '', modules: [] };
+  // Códigos por tablero — MISMA matriz que YOD OS (access-policy.js). El menú
+  // solo enseña lo que tu sesión permite; el muro real sigue siendo cada backend.
+  var CODES = {
+    'SYS-POTENCIALES': ['PT', 'MP', 'MA', 'MX', 'UN', 'RE', 'PA'],
+    'SYS-TRACK': ['CO', 'TC'],
+    'SYS-MIRAMAR': ['RM'],
+    'SYS-TAREAS': ['TA'],
+    'SYS-FLUJO': ['FL'],
+    'SYS-INTERIORES': ['IN'],
+    'SYS-INVERSION': ['IV'],
+    'SYS-MARKETING': ['MK']
+  };
+  // identity: 'pending' (validando) | 'ok' (canje válido) | 'fail' (sin sesión o canje falló)
+  var state = { role: '', boards: '', modules: [], identity: 'pending', catalogRows: null };
+
+  function boardsList() { return String(state.boards || '').toUpperCase().split(/[,|; ]+/).filter(Boolean); }
+  function canOpen(sys) {
+    if (state.identity !== 'ok') return false;   // fail-closed: sin sesión validada, el menú no enseña nada
+    if (state.role === 'admin') return true;
+    var l = boardsList();
+    if (l.indexOf('*') > -1) return true;
+    var req = CODES[sys] || [];
+    for (var i = 0; i < req.length; i++) { if (l.indexOf(req[i]) > -1) return true; }
+    return false;
+  }
 
   function tok() { try { return localStorage.getItem(LSC) || ''; } catch (e) { return ''; } }
   function el(t, c, h) { var e = document.createElement(t); if (c) e.className = c; if (h != null) e.innerHTML = h; return e; }
@@ -46,6 +70,57 @@
     state.modules = rows;
     rows.forEach(function (r) { var n = navItem(r, cur); if (n) box.appendChild(n); });
     if (!box.children.length) box.innerHTML = '<span class="yod-nav-loading">Sin tableros</span>';
+  }
+
+  // Pinta el menú SOLO con los tableros de esta sesión (misma decisión que YOD OS).
+  // Mientras la identidad no valide, se queda en "Cargando…" — nunca se enseña de más.
+  function applyNav() {
+    var cur = currentSys();
+    if (state.identity === 'pending') return;
+    if (state.identity === 'fail') {
+      var box = document.getElementById('yodNav');
+      if (box) box.innerHTML = '<span class="yod-nav-loading">Sesión por validar</span>';
+      state.modules = [];
+      return;
+    }
+    var rows = (state.catalogRows && state.catalogRows.length) ? state.catalogRows : defaultRows();
+    renderNav(rows.filter(function (r) { return canOpen(r.system_id); }), cur);
+  }
+
+  // Cachés de datos que cada board guarda en localStorage (origen compartido:
+  // alexpueblag.github.io). Cuando cae el candado se purgan los del board
+  // negado, para que en un dispositivo compartido no queden datos de otra
+  // persona visibles sin permiso.
+  var DATA_CACHES = {
+    'SYS-TAREAS': ['aurum-cache-v5'],
+    'SYS-MIRAMAR': ['rm_cache_v3', 'rm_fin_v1'],
+    'SYS-INTERIORES': ['aurum_cache_v1', 'aurum_postq_v1'],
+    'SYS-INVERSION': ['ydr_board_data_v1'],
+    'SYS-MARKETING': ['aurum_board_q_v1']
+  };
+  function purgeCaches(sys) {
+    (DATA_CACHES[sys] || []).forEach(function (k) { try { localStorage.removeItem(k); } catch (e) { } });
+  }
+
+  // Candado de página: si el canje validó y este tablero NO está en tus accesos,
+  // se tapa el contenido y se purga su caché local. (El muro real es el backend
+  // del board — esto es la cara honesta de ese muro, para que no parezca que
+  // "entraste" y para que no queden datos cacheados en el dispositivo.)
+  function maybeLock() {
+    var cur = currentSys();
+    if (!cur || state.identity !== 'ok' || canOpen(cur)) return;
+    purgeCaches(cur);
+    var canvas = document.querySelector('.yod-canvas');
+    if (canvas) canvas.style.display = 'none';
+    var main = document.querySelector('.yod-main');
+    if (main && !document.getElementById('yodLock')) {
+      var lock = el('div', 'yod-lock');
+      lock.id = 'yodLock';
+      lock.innerHTML = '<i class="ti ti-shield-lock"></i><h2>' + esc(NAME[cur] || 'Este tablero') + ' no está en tus accesos</h2>'
+        + '<p>Tu sesión es válida, pero este tablero no forma parte de tus permisos. Si lo necesitas, pídelo a Dirección.</p>'
+        + '<a href="' + OS + '"><i class="ti ti-home-2"></i> Volver a YOD OS</a>';
+      main.appendChild(lock);
+    }
   }
 
   function boot() {
@@ -72,7 +147,7 @@
     document.body.appendChild(shell);
 
     wireDrawer(shell, scrim);
-    renderNav(defaultRows(), cur);
+    // El menú NO se pinta hasta validar la sesión (fail-closed): queda "Cargando…"
     wireSearch();
     loadIdentity();
     loadCatalog(cur);
@@ -102,22 +177,25 @@
         if (!d || !d.ok || !Array.isArray(d.rows)) return;
         var rows = d.rows.filter(function (r) { return r && r.visible === 'SI' && r.system_id && DEST[r.system_id]; })
           .sort(function (a, b) { return Number(a.orden) - Number(b.orden); });
-        if (rows.length) renderNav(rows, cur);
+        if (rows.length) { state.catalogRows = rows; applyNav(); }
       }).catch(function () { });
   }
   function loadIdentity() {
-    var k = tok(); if (!k) { set('yodRole', 'Requiere acceso'); return; }
+    var k = tok();
+    if (!k) { state.identity = 'fail'; set('yodRole', 'Requiere acceso'); applyNav(); return; }
     fetch(PORTERO + '?recurso=canje&t=' + encodeURIComponent(k), { cache: 'no-store', credentials: 'omit' })
       .then(function (r) { return r.json(); })
       .then(function (j) {
         if (!j || !j.ok) throw 0;
         state.role = j.rol || 'vista'; state.boards = j.boards || '';
+        state.identity = 'ok';
         var nm = j.nombre || j.correo || 'Equipo YOD';
         var persona = state.role === 'admin' ? 'direccion' : 'colaborador';
         set('yodName', nm); set('yodRole', persona === 'direccion' ? 'Dirección' : 'Colaborador');
         var av = document.getElementById('yodAv'); if (av) av.textContent = (nm.split(/\s+/).filter(Boolean).slice(0, 2).map(function (x) { return x[0]; }).join('') || 'YO').toUpperCase();
         var chip = document.getElementById('yodChip'); if (chip) { chip.className = 'yod-role ' + persona; chip.textContent = persona === 'direccion' ? 'Dirección' : 'Colaborador'; chip.style.display = ''; }
-      }).catch(function () { set('yodRole', 'Sesión por validar'); });
+        applyNav(); maybeLock();
+      }).catch(function () { state.identity = 'fail'; set('yodRole', 'Sesión por validar'); applyNav(); });
   }
 
   function wireSearch() {
