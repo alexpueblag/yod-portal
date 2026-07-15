@@ -35,6 +35,23 @@
     try{var raw=localStorage.getItem(CACHE_KEY);if(!raw)return null;var parsed=JSON.parse(raw);return Array.isArray(parsed)?parsed:null;}catch(e){return null;}
   }
 
+  // --- "Solo mis tareas": match nombre de la persona ↔ campo responsable ---
+  // Normaliza (minúsculas, sin acentos, espacios colapsados) y compara por tokens:
+  // el nombre corto debe estar contenido en el largo. Así "Sayri" ↔ "Sayri López"
+  // y "María" ↔ "María Fernanda" hacen match sin depender del formato exacto.
+  function normName(s){return String(s||'').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9 ]/g,' ').replace(/\s+/g,' ').trim();}
+  function nameTokens(s){return normName(s).split(' ').filter(Boolean);}
+  function isMine(responsable, persona){
+    var r=nameTokens(responsable), p=nameTokens(persona);
+    if(!r.length||!p.length)return false;
+    if(normName(responsable)===normName(persona))return true;
+    var short=r.length<=p.length?r:p, long=r.length<=p.length?p:r;
+    return short.every(function(t){return long.indexOf(t)>-1;});
+  }
+  function tasksForPerson(tasks, persona){
+    return (Array.isArray(tasks)?tasks:[]).filter(function(t){return isMine(t&&t.responsable, persona);});
+  }
+
   async function fetchLive(token){
     var controller=(typeof AbortController!=='undefined')?new AbortController():null;
     var timer=controller?setTimeout(function(){controller.abort();},12000):null;
@@ -65,5 +82,5 @@
       var e2=new Error((err&&err.message)||'error');e2._diag=(err&&err.message)||'error';throw e2;
     }
   }
-  root.YodOperations=Object.freeze({load:load,summarize:summarize,normalizeStatus:normalizeStatus,daysUntil:daysUntil});
+  root.YodOperations=Object.freeze({load:load,summarize:summarize,normalizeStatus:normalizeStatus,daysUntil:daysUntil,tasksForPerson:tasksForPerson,isMine:isMine});
 })(typeof globalThis!=='undefined'?globalThis:this);

@@ -79,6 +79,7 @@
       var diag=response.ok?(data===null?'respuesta-no-JSON':(data.ok?'':('canje:'+(data.error||'ok=false')))):('HTTP-'+response.status);
       if(!data||!data.ok){console.warn('[YOD OS] canje falló →',diag,{status:response.status,muestra:String(raw).slice(0,200)});var e2=new Error(diag);e2._diag=diag;throw e2;}
       state.role=data.rol||'vista';state.boards=data.boards||'';state.profileReady=true;
+      state.personName=String(data.nombre||'').trim();
       var name=data.nombre||data.correo||'Equipo YOD';$('user-name').textContent=name;$('user-role').textContent=state.role;$('avatar').textContent=initials(name);$('first-name').textContent=name.split(/\s|@/)[0];$('access-status').textContent=state.role==='admin'?'Dirección':'Autorizado';
       var persona=state.role==='admin'?'direccion':'colaborador';
       document.documentElement.setAttribute('data-persona',persona);
@@ -101,11 +102,35 @@
     if(result.source==='cache'){var note=document.createElement('div');note.className='operation-note';note.innerHTML='<i class="ti ti-history"></i><span>Mostrando el último resumen guardado en este dispositivo. La consulta en vivo no respondió; abre el tablero para reintentar.</span>';panel.appendChild(note);}
     var metrics=document.createElement('div');metrics.className='operation-metrics';[['Abiertas',summary.open],['Vencidas',summary.overdue],['Próximos 7 días',summary.dueSoon],['En revisión',summary.review]].forEach(function(item){var box=document.createElement('div');box.className='operation-metric';var label=document.createElement('span');label.textContent=item[0];var value=document.createElement('strong');value.textContent=String(item[1]);box.append(label,value);metrics.appendChild(box);});panel.appendChild(metrics);
     var list=document.createElement('div');list.className='task-list';summary.priority.forEach(function(task){var row=document.createElement('div');row.className='task-row';var title=document.createElement('div');title.className='task-title';var strong=document.createElement('strong');strong.textContent=task.actividad||task.entregable||'Tarea sin título';var project=document.createElement('small');project.textContent=task.proyecto||task.empresa||'Sin proyecto';title.append(strong,project);var person=document.createElement('span');person.className='task-person';person.textContent=task.responsable||'Sin responsable';var status=document.createElement('span');status.className='task-status';status.textContent=window.YodOperations.normalizeStatus(task.estado);var dueInfo=taskDueLabel(task);var due=document.createElement('span');due.className='task-due'+(dueInfo.overdue?' overdue':'');due.textContent=dueInfo.text;row.append(title,person,status,due);list.appendChild(row);});
-    if(!summary.priority.length){var empty=document.createElement('div');empty.className='operation-message';empty.textContent='No hay tareas abiertas que requieran atención.';list.appendChild(empty);}panel.appendChild(list);
+    if(!summary.priority.length){
+      var empty=document.createElement('div');empty.className='operation-message';
+      if(result.mine&&summary.total===0){
+        empty.innerHTML='<i class="ti ti-user-question"></i><span>No encontramos tareas a tu nombre'+(result.totalEquipo?(' (el equipo tiene '+result.totalEquipo+'). Si esperabas ver las tuyas, revisa que tu nombre en Accesos coincida con el de «responsable» en el tablero.'):'.')+'</span>';
+      }else if(result.mine){
+        empty.textContent='No tienes tareas abiertas. Todo al día.';
+      }else{
+        empty.textContent='No hay tareas abiertas que requieran atención.';
+      }
+      list.appendChild(empty);
+    }panel.appendChild(list);
   }
   async function loadOperations(token){
     var panel=$('operation-panel');panel.setAttribute('aria-busy','true');
-    try{renderOperations(await window.YodOperations.load(token));}
+    try{
+      var result=await window.YodOperations.load(token);
+      var esAdmin=state.role==='admin';
+      // Título honesto según el rol
+      var titulo=$('operation-title'),eyebrow=titulo&&titulo.closest('.section-head')?titulo.closest('.section-head').querySelector('.eyebrow'):null;
+      if(esAdmin){ if(titulo)titulo.textContent='Operación semanal';
+      }else{
+        // Colaborador: solo SUS tareas (match por responsable)
+        var mias=window.YodOperations.tasksForPerson(result.tasks,state.personName||'');
+        result={tasks:mias,summary:window.YodOperations.summarize(mias),updatedAt:result.updatedAt,source:result.source,mine:true,personName:state.personName,totalEquipo:(result.tasks||[]).length};
+        if(titulo)titulo.textContent='Tus tareas de la semana';
+        if(eyebrow)eyebrow.textContent='Solo lo tuyo';
+      }
+      renderOperations(result);
+    }
     catch(error){
       var diag=(error&&(error._diag||error.message))||'error';
       panel.setAttribute('aria-busy','false');
