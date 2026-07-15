@@ -1,10 +1,15 @@
 (function(root){
   'use strict';
+  // Código de cada tablero YOD OS (debe coincidir con la matriz de Accesos).
+  // Se incluyen los códigos históricos de Potenciales/Track por compatibilidad.
   var SYSTEM_CODES=Object.freeze({
-    'SYS-POTENCIALES':['MP','MA','MX','UN','RE','PA'],
-    'SYS-TRACK':['TC','TA','TM'],
+    'SYS-POTENCIALES':['PT','MP','MA','MX','UN','RE','PA'],
+    'SYS-TRACK':['CO','TC'],
+    'SYS-MIRAMAR':['RM'],
     'SYS-TAREAS':['TA'],
     'SYS-FLUJO':['FL'],
+    'SYS-INTERIORES':['IN'],
+    'SYS-INVERSION':['IV'],
     'SYS-MARKETING':['MK'],
     'SYS-CONTROL':['AC']
   });
