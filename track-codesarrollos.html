@@ -88,12 +88,23 @@
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){map.invalidateSize();map.fitBounds(bounds)}});
   window.addEventListener('resize',()=>map.invalidateSize());
   }
-  const controller=new AbortController();
-  const timeout=setTimeout(()=>controller.abort(),8000);
-  fetch(ENDPOINT,{credentials:'omit',signal:controller.signal}).then(r=>{if(!r.ok)throw Error('backend');return r.json()}).then(data=>{
-    clearTimeout(timeout); if(!data.ok||!Array.isArray(data.rows))throw Error('payload');
-    document.getElementById('source').textContent=`Datos en vivo desde Sheets · ${data.rows.length} proyectos`; inicia(data.rows.map(normaliza));
-  }).catch(()=>{clearTimeout(timeout);document.getElementById('source').textContent='Track temporalmente no disponible · ningún destino habilitado'});
+  // La credencial del Portero viaja también en la lectura del Track: este
+  // tablero deja de ser público. Sin sesión no se piden datos; con sesión, el
+  // backend valida `k` (código CO/TC) igual que los demás tableros.
+  let _k=''; try{_k=localStorage.getItem('pyod_clave_v1')||'';}catch(e){}
+  if(!_k){
+    document.getElementById('source').textContent='Inicia sesión en YOD OS para ver la ruta de proyectos';
+    setTimeout(()=>{location.href='https://alexpueblag.github.io/yod-portal/os/';},1800);
+  }else{
+    const controller=new AbortController();
+    const timeout=setTimeout(()=>controller.abort(),8000);
+    fetch(ENDPOINT+'&k='+encodeURIComponent(_k),{credentials:'omit',signal:controller.signal}).then(r=>{if(!r.ok)throw Error('backend');return r.json()}).then(data=>{
+      clearTimeout(timeout);
+      if(data&&data.error==='liga'){document.getElementById('source').textContent='Tu sesión no tiene acceso a Codesarrollos';return;}
+      if(!data.ok||!Array.isArray(data.rows))throw Error('payload');
+      document.getElementById('source').textContent=`Datos en vivo desde Sheets · ${data.rows.length} proyectos`; inicia(data.rows.map(normaliza));
+    }).catch(()=>{clearTimeout(timeout);document.getElementById('source').textContent='Track temporalmente no disponible · ningún destino habilitado'});
+  }
 })();
 </script>
 <script src="https://alexpueblag.github.io/potenciales-yod/portero.js?v=779fed3"></script>

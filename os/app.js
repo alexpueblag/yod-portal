@@ -96,6 +96,51 @@
 
   function renderOperationsLocked(){var panel=$('operation-panel');panel.setAttribute('aria-busy','false');panel.innerHTML='<div class="operation-message"><i class="ti ti-shield-lock"></i><span>Operación semanal no está incluida en los permisos de esta cuenta.</span></div>';}
 
+  // Conciliación de identidad (solo Dirección): cruza los responsables del board
+  // contra las personas de Accesos, para cazar los "cruces" — nombres del board
+  // que no corresponden a ninguna cuenta, y personas sin tareas a su nombre.
+  async function loadReconcile(token){
+    var section=$('reconcile');if(!section)return;
+    try{
+      var url=PORTERO_ENDPOINT+'?recurso=accesos-lista&k='+encodeURIComponent(token)+'&cb='+Date.now();
+      var resp=await fetch(url,{cache:'no-store',credentials:'omit'});var data=await resp.json();
+      if(!data||!data.ok||!Array.isArray(data.usuarios))return;
+      var personas=data.usuarios.filter(function(u){return String(u.estado||'').toLowerCase()==='activo';});
+      var tasks=state.allTasks||[];
+      var responsables=[];var vistos={};
+      tasks.forEach(function(t){var r=String(t&&t.responsable||'').trim();if(r&&!vistos[r.toLowerCase()]){vistos[r.toLowerCase()]=1;responsables.push(r);}});
+      // Responsables del board sin cuenta en Accesos
+      var huerfanos=responsables.filter(function(r){return !personas.some(function(p){return window.YodOperations.isMine(r,p.nombre||p.correo);});});
+      // Personas de Accesos (con TA) sin ninguna tarea a su nombre
+      var conTA=personas.filter(function(p){var b=String(p.boards||'');return b.trim()==='*'||b.toUpperCase().split(/[,;| ]+/).indexOf('TA')>-1||String(p.rol||'').toLowerCase()==='admin';});
+      var sinTareas=conTA.filter(function(p){return !responsables.some(function(r){return window.YodOperations.isMine(r,p.nombre||p.correo);});});
+      renderReconcile(huerfanos,sinTareas,responsables.length,personas.length);
+    }catch(e){/* silencioso: es una ayuda, no debe romper la home */}
+  }
+  function renderReconcile(huerfanos,sinTareas,nResp,nPers){
+    var section=$('reconcile'),panel=$('reconcile-panel');if(!section||!panel)return;
+    if(!huerfanos.length&&!sinTareas.length){
+      section.classList.remove('hidden');
+      panel.innerHTML='<div class="reconcile-ok"><i class="ti ti-circle-check"></i><span>Todo cuadra: los '+nResp+' responsables del board corresponden a personas en Accesos.</span></div>';
+      return;
+    }
+    section.classList.remove('hidden');panel.replaceChildren();
+    if(huerfanos.length){
+      var b1=document.createElement('div');b1.className='reconcile-block warn';
+      b1.innerHTML='<h3><i class="ti ti-alert-triangle"></i> Nombres en el board sin cuenta en Accesos</h3><p>Estas personas aparecen como «responsable» en tareas, pero su nombre no coincide con nadie en Accesos. No verán sus tareas en su resumen hasta que el nombre coincida (o se den de alta).</p>';
+      var ul=document.createElement('div');ul.className='reconcile-chips';
+      huerfanos.forEach(function(n){var c=document.createElement('span');c.className='reconcile-chip';c.textContent=n;ul.appendChild(c);});
+      b1.appendChild(ul);panel.appendChild(b1);
+    }
+    if(sinTareas.length){
+      var b2=document.createElement('div');b2.className='reconcile-block';
+      b2.innerHTML='<h3><i class="ti ti-user-off"></i> Personas con acceso a Operación sin tareas a su nombre</h3><p>Tienen el tablero, pero no hay tareas donde el «responsable» coincida con su nombre. Puede ser normal, o que el nombre esté escrito distinto en el board.</p>';
+      var ul2=document.createElement('div');ul2.className='reconcile-chips';
+      sinTareas.forEach(function(p){var c=document.createElement('span');c.className='reconcile-chip muted';c.textContent=p.nombre||p.correo;ul2.appendChild(c);});
+      b2.appendChild(ul2);panel.appendChild(b2);
+    }
+  }
+
   function taskDueLabel(task){var days=window.YodOperations.daysUntil(task);if(days==null)return {text:'Sin fecha',overdue:false};if(days<0)return {text:Math.abs(days)+' d vencida',overdue:true};if(days===0)return {text:'Vence hoy',overdue:false};return {text:'En '+days+' d',overdue:false};}
   function renderOperations(result){
     var panel=$('operation-panel'),summary=result.summary;panel.replaceChildren();panel.setAttribute('aria-busy','false');
@@ -119,6 +164,8 @@
     try{
       var result=await window.YodOperations.load(token);
       var esAdmin=state.role==='admin';
+      state.allTasks=Array.isArray(result.tasks)?result.tasks:[];
+      if(esAdmin)loadReconcile(token);
       // Título honesto según el rol
       var titulo=$('operation-title'),eyebrow=titulo&&titulo.closest('.section-head')?titulo.closest('.section-head').querySelector('.eyebrow'):null;
       if(esAdmin){ if(titulo)titulo.textContent='Operación semanal';

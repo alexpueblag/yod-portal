@@ -1,0 +1,41 @@
+# Códigos de tablero YOD OS — fuente única de verdad
+
+Cada persona tiene en **Accesos** (`Hoja YOD-Potenciales` → pestaña `ACCESOS`,
+columna `boards`) una lista de códigos separados por coma, o `*` para todo.
+Cada backend valida su propio código antes de entregar datos. **Si el código
+del backend no coincide con el de esta tabla, los colaboradores quedan
+bloqueados aunque tengan el acceso** (fue exactamente el bug `BA`→`TA` de
+Operación, 15-jul-2026).
+
+| Tablero | Código | Repositorio | Endpoint valida con |
+|---|---|---|---|
+| Potenciales | `PT` (+ `MP,MA,MX,UN,RE,PA` internos) | potenciales-yod | Portero (nativo) |
+| Codesarrollos | `CO` (`TC` alterno) | yod-portal/track-codesarrollos | OS Backend Seguro |
+| Real Miramar | `RM` | real-miramar-board | `board=RM` |
+| Operación semanal | `TA` | board-aurum | `board=TA` (antes `BA` ✗) |
+| Flujo YOD | `FL` | board-flujo-yod | `board=FL` |
+| Interiores | `IN` | interiores-aurum | `board=IN` |
+| Inversionistas | `IV` | yodesarrollo-board | `board=IV` |
+| Métricas / Marketing | `MK` | aurum-board | `board=MK` |
+| Accesos (admin) | `AC` | potenciales-yod/accesos.html | rol admin |
+
+## Reglas
+
+1. **`admin` y `*` abren todo.** El resto se compara contra la lista `boards`.
+2. El código que valida cada backend debe ser **idéntico** al de esta tabla y
+   al que asigna la matriz de `accesos.html`.
+3. Estas tres fuentes deben decir lo mismo siempre:
+   - `yod-portal/os/access-policy.js` → `SYSTEM_CODES`
+   - `yod-portal/os/shell.js` → `CODES`
+   - `potenciales-yod/accesos.html` → `CODES` (matriz de alta)
+4. Validación recomendada **sin `board=`**: pedir el canje simple al Portero
+   (devuelve `boards`) y revisar el código aquí, en el backend. Así no depende
+   del filtro por-board del Portero y no se puede volver a teclear mal el
+   código. (Ver `board-aurum/apps-script/portero-auth.gs`.)
+
+## Prueba de humo (manual, ~2 min)
+
+Con una sesión de colaborador que tenga **solo** ciertos códigos, abrir cada
+tablero: los de su lista deben cargar datos; los demás deben responder
+`liga`/candado. Si un tablero de su lista responde `liga`, su backend tiene el
+código mal — corregirlo contra esta tabla y **redesplegar (Nueva versión)**.

@@ -26,3 +26,16 @@
   .search-trigger{width:40px;flex:none;justify-content:center;padding:0}
   .search-trigger span,.search-trigger kbd{display:none}
 }
+/* Conciliación de nombres (solo Dirección) */
+.reconcile-panel{display:flex;flex-direction:column;gap:12px}
+.reconcile-ok{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px 20px;display:flex;align-items:center;gap:10px;color:var(--success);font-size:13px}
+.reconcile-ok i{font-size:20px}
+.reconcile-block{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px 18px;border-left:4px solid var(--line)}
+.reconcile-block.warn{border-left-color:var(--danger)}
+.reconcile-block h3{margin:0 0 6px;font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px}
+.reconcile-block.warn h3 i{color:var(--danger)}
+.reconcile-block h3 i{color:var(--muted);font-size:17px}
+.reconcile-block p{margin:0 0 12px;font-size:12px;color:var(--muted);line-height:1.5}
+.reconcile-chips{display:flex;flex-wrap:wrap;gap:7px}
+.reconcile-chip{font-size:12px;font-weight:500;padding:5px 11px;border-radius:999px;background:#f7e5e2;color:var(--danger);border:1px solid transparent}
+.reconcile-chip.muted{background:var(--paper-2);color:var(--muted)}
