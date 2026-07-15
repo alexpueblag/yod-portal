@@ -57,7 +57,7 @@
   }
 
   async function loadCatalog(){
-    if(state.loading)return;state.loading=true;$('refresh').disabled=true;$('mobile-refresh').disabled=true;setConnection('','Actualizando');
+    if(state.loading)return;state.loading=true;$('refresh').disabled=true;var _mr=$('mobile-refresh');if(_mr)_mr.disabled=true;setConnection('','Actualizando');
     var controller=new AbortController();var timeout=setTimeout(function(){controller.abort();},9000);
     try{
       var response=await fetch(CATALOG_ENDPOINT+'&cb='+Date.now(),{cache:'no-store',credentials:'omit',signal:controller.signal});
@@ -67,7 +67,7 @@
     }catch(error){
       setConnection('error','Sin conexión');$('updated-at').textContent='No se pudo actualizar';
       if(!state.modules.length){var grid=$('module-grid');grid.setAttribute('aria-busy','false');grid.innerHTML='<div class="empty-state">Control Maestro no respondió. Por seguridad no se habilitaron enlaces. Intente actualizar nuevamente.</div>';}
-    }finally{clearTimeout(timeout);state.loading=false;$('refresh').disabled=false;$('mobile-refresh').disabled=false;}
+    }finally{clearTimeout(timeout);state.loading=false;$('refresh').disabled=false;var _mr2=$('mobile-refresh');if(_mr2)_mr2.disabled=false;}
   }
 
   async function loadIdentity(){
@@ -208,9 +208,9 @@
   function openSearch(){var dialog=$('search-dialog');dialog.showModal();$('search-input').value='';buildSearch('');setTimeout(function(){$('search-input').focus();},0);}
   $('welcome-title').firstChild.textContent=greeting()+', ';
   function refreshAll(){loadCatalog();var token='';try{token=localStorage.getItem(TOKEN_KEY)||'';}catch(_error){}if(!token||!state.profileReady)return;loadPulse(token);if(window.YodAccessPolicy.hasCode(state.boards,'TA')||state.role==='admin')loadOperations(token);}
-  $('refresh').addEventListener('click',refreshAll);$('mobile-refresh').addEventListener('click',refreshAll);$('search-trigger').addEventListener('click',openSearch);$('search-input').addEventListener('input',function(e){buildSearch(e.target.value);});
+  $('refresh').addEventListener('click',refreshAll);var _mrb=$('mobile-refresh');if(_mrb)_mrb.addEventListener('click',refreshAll);$('search-trigger').addEventListener('click',openSearch);$('search-input').addEventListener('input',function(e){buildSearch(e.target.value);});
   document.addEventListener('keydown',function(e){if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();openSearch();}});
   // Cajón lateral en móvil (☰) — misma navegación que escritorio
-  (function(){var shell=document.querySelector('.app-shell');var burger=$('menu-toggle');var scrim=$('nav-scrim');if(!shell)return;if(window.matchMedia&&window.matchMedia('(max-width:900px)').matches)shell.classList.add('nav-open');function closeNav(){shell.classList.remove('nav-open');}if(burger)burger.addEventListener('click',function(){shell.classList.toggle('nav-open');});if(scrim)scrim.addEventListener('click',closeNav);document.addEventListener('keydown',function(e){if(e.key==='Escape')closeNav();});var nav=$('nav-modules');if(nav)nav.addEventListener('click',function(e){if(e.target.closest('.nav-item'))closeNav();});if(window.matchMedia){var mq=window.matchMedia('(min-width:901px)');mq.addEventListener('change',function(m){if(m.matches)closeNav();});}})();
+  (function(){var shell=document.querySelector('.app-shell');var burger=$('menu-toggle');var scrim=$('nav-scrim');if(!shell)return;if(window.matchMedia&&window.matchMedia('(max-width:900px)').matches){var seen=false;try{seen=sessionStorage.getItem('yod_drawer_seen')==='1';}catch(e){}if(!seen){shell.classList.add('nav-open');try{sessionStorage.setItem('yod_drawer_seen','1');}catch(e){}}}function closeNav(){shell.classList.remove('nav-open');}if(burger)burger.addEventListener('click',function(){shell.classList.toggle('nav-open');});if(scrim)scrim.addEventListener('click',closeNav);document.addEventListener('keydown',function(e){if(e.key==='Escape')closeNav();});var nav=$('nav-modules');if(nav)nav.addEventListener('click',function(e){if(e.target.closest('.nav-item'))closeNav();});if(window.matchMedia){var mq=window.matchMedia('(min-width:901px)');mq.addEventListener('change',function(m){if(m.matches)closeNav();});}})();
   loadIdentity();loadCatalog();
 })();

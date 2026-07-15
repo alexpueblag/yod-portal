@@ -120,3 +120,17 @@ body.yod-on{margin:0;background:#f6f3ed}
 /* Cerrar sesión (pie del sidebar) */
 .yod-out{margin-left:auto;flex:none;width:32px;height:32px;display:grid;place-items:center;border:0;border-radius:8px;background:transparent;color:rgba(246,243,237,.55);cursor:pointer;font-size:17px}
 .yod-out:hover{background:rgba(255,255,255,.08);color:#f6f3ed}
+
+/* ===== Quick wins UX (enjambre 15-jul): foco, táctil 44px, safe-area ===== */
+/* Foco de teclado visible en todo el cromo del shell */
+.yod-shell a:focus-visible,.yod-shell button:focus-visible,.yod-burger:focus-visible,.yod-out:focus-visible,.yod-search:focus-visible,.yod-nav-item:focus-visible{outline:2px solid #b98b3c;outline-offset:2px;border-radius:8px}
+/* Safe-area del iPhone: notch arriba, home-indicator abajo */
+.yod-topbar{padding-top:env(safe-area-inset-top)}
+.yod-sidebar{padding-bottom:calc(20px + env(safe-area-inset-bottom))}
+/* Objetivos táctiles mínimos en dispositivos de dedo */
+@media (pointer:coarse){
+  .yod-burger,.yod-search,.yod-home{min-width:44px;min-height:44px}
+  .yod-out{min-width:44px;min-height:44px}
+  .yod-nav-item{min-height:44px}
+  .yod-topbar{gap:8px}
+}

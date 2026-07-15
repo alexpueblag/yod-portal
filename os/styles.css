@@ -39,3 +39,19 @@
 .reconcile-chips{display:flex;flex-wrap:wrap;gap:7px}
 .reconcile-chip{font-size:12px;font-weight:500;padding:5px 11px;border-radius:999px;background:#f7e5e2;color:var(--danger);border:1px solid transparent}
 .reconcile-chip.muted{background:var(--paper-2);color:var(--muted)}
+
+/* ===== Quick wins UX (enjambre 15-jul) ===== */
+/* Foco de teclado visible en todos los controles de la home */
+a:focus-visible,button:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:8px}
+/* Safe-area del iPhone en topbar y cajón */
+.topbar{padding-top:env(safe-area-inset-top)}
+.sidebar-foot{padding-bottom:calc(env(safe-area-inset-bottom))}
+@media(max-width:900px){.sidebar{padding-bottom:calc(20px + env(safe-area-inset-bottom))}}
+/* Inputs a 16px en móvil: evita el auto-zoom de Safari iOS */
+@media(max-width:680px){input,select,textarea{font-size:16px}}
+/* Objetivos táctiles mínimos con el dedo */
+@media(pointer:coarse){
+  .burger,.icon-button,.search-trigger{min-width:44px;min-height:44px}
+  .nav-item{min-height:44px}
+  .reconcile-chip{min-height:32px;display:inline-flex;align-items:center}
+}
