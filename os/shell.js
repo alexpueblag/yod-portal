@@ -82,6 +82,8 @@
     function open() { shell.classList.add('yod-nav-open'); }
     function close() { shell.classList.remove('yod-nav-open'); }
     function toggle() { shell.classList.toggle('yod-nav-open'); }
+    // En móvil el menú abre por defecto al entrar; cada quien lo cierra o navega.
+    if (window.matchMedia && window.matchMedia('(max-width:900px)').matches) open();
     var burger = document.getElementById('yodBurger');
     if (burger) burger.addEventListener('click', toggle);
     scrim.addEventListener('click', close);
