@@ -44,8 +44,11 @@
   }
   /* Cara YOD OS: el shell da la barra + topbar; el mapa llena el lienzo */
   header{display:none}
-  #wrap{height:calc(100vh - 64px)}
-  @media(max-width:680px){#wrap{height:calc(100vh - 56px)}}
+  #wrap{height:calc(100dvh - 64px)}
+  @media(max-width:680px){#wrap{height:calc(100dvh - 56px)}}
+  /* Quick wins UX (enjambre 15-jul): foco visible + panel de fuente legible (era 9px) */
+  a:focus-visible,button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+  .panel .source,.pie{font-size:11px}
 </style>
 </head>
 <body>
