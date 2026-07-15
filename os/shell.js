@@ -149,6 +149,7 @@
     var main = el('main', 'yod-main');
     var top = el('header', 'yod-topbar');
     top.innerHTML = '<button class="yod-burger" id="yodBurger" type="button" aria-label="Abrir tableros"><i class="ti ti-menu-2"></i></button>'
+      + '<a class="yod-topbrand" href="' + OS + '" title="Volver a YOD OS"><b>YOD</b><span>OS</span></a>'
       + '<button class="yod-search" id="yodSearch" type="button"><i class="ti ti-search"></i><span>Buscar un tablero…</span><kbd>⌘ K</kbd></button>'
       + '<div class="yod-top-actions"><span class="yod-role" id="yodChip" style="display:none"></span><a class="yod-home" href="' + OS + '" title="Ir a YOD OS"><i class="ti ti-home-2"></i></a></div>';
     main.appendChild(top); main.appendChild(canvas);

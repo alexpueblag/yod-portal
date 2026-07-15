@@ -9,7 +9,7 @@
     'SYS-TAREAS':'checklist','SYS-FLUJO':'wallet','SYS-INTERIORES':'armchair-2',
     'SYS-INVERSION':'presentation-analytics','SYS-MARKETING':'speakerphone','SYS-OBRA':'building-skyscraper'
   };
-  var state={modules:[],rawRows:[],role:'vista',boards:'',profileReady:false,loading:false};
+  var state={modules:[],rawRows:[],role:'vista',boards:'',profileReady:false,loading:false,opsScope:'mias',allTasks:[]};
   var $=function(id){return document.getElementById(id);};
 
   function greeting(){var h=new Date().getHours();return h<12?'Buenos días':h<19?'Buenas tardes':'Buenas noches';}
@@ -144,6 +144,12 @@
   function taskDueLabel(task){var days=window.YodOperations.daysUntil(task);if(days==null)return {text:'Sin fecha',overdue:false};if(days<0)return {text:Math.abs(days)+' d vencida',overdue:true};if(days===0)return {text:'Vence hoy',overdue:false};return {text:'En '+days+' d',overdue:false};}
   function renderOperations(result){
     var panel=$('operation-panel'),summary=result.summary;panel.replaceChildren();panel.setAttribute('aria-busy','false');
+    // Toggle: el resumen es TUYO por defecto (para todos, incluida Dirección); «Equipo» muestra todo.
+    var scope=result.scope||'mias';
+    var toggle=document.createElement('div');toggle.className='ops-scope';
+    toggle.innerHTML='<button type="button" data-scope="mias" class="'+(scope==='mias'?'on':'')+'">Mis tareas</button><button type="button" data-scope="equipo" class="'+(scope==='equipo'?'on':'')+'">Todo el equipo</button>';
+    toggle.querySelectorAll('button').forEach(function(b){b.addEventListener('click',function(){if(state.opsScope===b.dataset.scope)return;state.opsScope=b.dataset.scope;renderOpsScoped(state._opsSource,state._opsUpdatedAt);});});
+    panel.appendChild(toggle);
     if(result.source==='cache'){var note=document.createElement('div');note.className='operation-note';note.innerHTML='<i class="ti ti-history"></i><span>Mostrando el último resumen guardado en este dispositivo. La consulta en vivo no respondió; abre el tablero para reintentar.</span>';panel.appendChild(note);}
     var metrics=document.createElement('div');metrics.className='operation-metrics';[['Abiertas',summary.open],['Vencidas',summary.overdue],['Próximos 7 días',summary.dueSoon],['En revisión',summary.review]].forEach(function(item){var box=document.createElement('div');box.className='operation-metric';var label=document.createElement('span');label.textContent=item[0];var value=document.createElement('strong');value.textContent=String(item[1]);box.append(label,value);metrics.appendChild(box);});panel.appendChild(metrics);
     var list=document.createElement('div');list.className='task-list';summary.priority.forEach(function(task){var row=document.createElement('div');row.className='task-row';var title=document.createElement('div');title.className='task-title';var strong=document.createElement('strong');strong.textContent=task.actividad||task.entregable||'Tarea sin título';var project=document.createElement('small');project.textContent=task.proyecto||task.empresa||'Sin proyecto';title.append(strong,project);var person=document.createElement('span');person.className='task-person';person.textContent=task.responsable||'Sin responsable';var status=document.createElement('span');status.className='task-status';status.textContent=window.YodOperations.normalizeStatus(task.estado);var dueInfo=taskDueLabel(task);var due=document.createElement('span');due.className='task-due'+(dueInfo.overdue?' overdue':'');due.textContent=dueInfo.text;row.append(title,person,status,due);list.appendChild(row);});
@@ -159,24 +165,28 @@
       list.appendChild(empty);
     }panel.appendChild(list);
   }
+  // Pinta el resumen según el alcance elegido (mías/equipo), sin volver a pedir datos.
+  function renderOpsScoped(source,updatedAt){
+    state._opsSource=source;state._opsUpdatedAt=updatedAt;
+    var all=state.allTasks||[];var scope=state.opsScope||'mias';
+    var titulo=$('operation-title'),eyebrow=titulo&&titulo.closest('.section-head')?titulo.closest('.section-head').querySelector('.eyebrow'):null;
+    var tasks,mine=false;
+    if(scope==='mias'){
+      tasks=window.YodOperations.tasksForPerson(all,state.personName||'');mine=true;
+      if(titulo)titulo.textContent='Tus tareas de la semana';if(eyebrow)eyebrow.textContent='Lo tuyo, primero';
+    }else{
+      tasks=all;
+      if(titulo)titulo.textContent='Operación semanal · equipo';if(eyebrow)eyebrow.textContent='Todo el equipo';
+    }
+    renderOperations({tasks:tasks,summary:window.YodOperations.summarize(tasks),updatedAt:updatedAt,source:source,mine:mine,personName:state.personName,totalEquipo:all.length,scope:scope});
+  }
   async function loadOperations(token){
     var panel=$('operation-panel');panel.setAttribute('aria-busy','true');
     try{
       var result=await window.YodOperations.load(token);
-      var esAdmin=state.role==='admin';
       state.allTasks=Array.isArray(result.tasks)?result.tasks:[];
-      if(esAdmin)loadReconcile(token);
-      // Título honesto según el rol
-      var titulo=$('operation-title'),eyebrow=titulo&&titulo.closest('.section-head')?titulo.closest('.section-head').querySelector('.eyebrow'):null;
-      if(esAdmin){ if(titulo)titulo.textContent='Operación semanal';
-      }else{
-        // Colaborador: solo SUS tareas (match por responsable)
-        var mias=window.YodOperations.tasksForPerson(result.tasks,state.personName||'');
-        result={tasks:mias,summary:window.YodOperations.summarize(mias),updatedAt:result.updatedAt,source:result.source,mine:true,personName:state.personName,totalEquipo:(result.tasks||[]).length};
-        if(titulo)titulo.textContent='Tus tareas de la semana';
-        if(eyebrow)eyebrow.textContent='Solo lo tuyo';
-      }
-      renderOperations(result);
+      if(state.role==='admin')loadReconcile(token);
+      renderOpsScoped(result.source,result.updatedAt);
     }
     catch(error){
       var diag=(error&&(error._diag||error.message))||'error';

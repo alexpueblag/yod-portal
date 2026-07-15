@@ -134,3 +134,16 @@ body.yod-on{margin:0;background:#f6f3ed}
   .yod-nav-item{min-height:44px}
   .yod-topbar{gap:8px}
 }
+
+/* ===== Volver a YOD OS siempre visible (enjambre UX: navegación) ===== */
+/* Marca YOD OS en la topbar: en escritorio ya está en el sidebar; en móvil el
+   sidebar es cajón, así que la marca aquí ancla la identidad y da salida clara. */
+.yod-topbrand{display:none;align-items:baseline;gap:5px;text-decoration:none;color:var(--yink);padding:0 2px;flex:none}
+.yod-topbrand b{font-family:'Instrument Serif',Georgia,serif;font-size:21px;font-weight:400;letter-spacing:.02em;line-height:1}
+.yod-topbrand span{font-size:9px;letter-spacing:.14em;color:var(--yg,#9a7b3f)}
+.yod-topbar{z-index:100}
+@media(max-width:900px){
+  .yod-topbrand{display:flex;flex:1;min-width:0}
+  .yod-search{flex:none;width:44px;padding:0;justify-content:center}
+  .yod-search span,.yod-search kbd{display:none}
+}

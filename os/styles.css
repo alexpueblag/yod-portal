@@ -55,3 +55,10 @@ a:focus-visible,button:focus-visible,input:focus-visible,[tabindex]:focus-visibl
   .nav-item{min-height:44px}
   .reconcile-chip{min-height:32px;display:inline-flex;align-items:center}
 }
+
+/* Toggle Mías / Equipo del resumen de Operación (enjambre UX) */
+.ops-scope{display:flex;gap:6px;padding:12px 16px 0}
+.ops-scope button{flex:none;font:inherit;font-size:12px;font-weight:600;padding:7px 14px;border-radius:999px;border:1px solid var(--line);background:var(--card);color:var(--muted);cursor:pointer;min-height:36px}
+.ops-scope button:hover{border-color:var(--gold)}
+.ops-scope button.on{background:var(--ink);color:#f6f3ed;border-color:transparent}
+@media(pointer:coarse){.ops-scope button{min-height:40px}}
