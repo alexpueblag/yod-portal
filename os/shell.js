@@ -101,6 +101,17 @@
   function purgeCaches(sys) {
     (DATA_CACHES[sys] || []).forEach(function (k) { try { localStorage.removeItem(k); } catch (e) { } });
   }
+  function purgeAll() {
+    Object.keys(DATA_CACHES).forEach(function (s) { purgeCaches(s); });
+  }
+  // Cerrar sesión: borra credencial + TODOS los cachés de datos y vuelve al OS.
+  // Vital en dispositivos compartidos (una tablet del equipo) para no dejar
+  // la sesión ni los datos de una persona al alcance de la siguiente.
+  function logout() {
+    try { localStorage.removeItem(LSC); sessionStorage.removeItem('pyod_rol'); } catch (e) { }
+    purgeAll();
+    location.href = OS;
+  }
 
   // Candado de página: si el canje validó y este tablero NO está en tus accesos,
   // se tapa el contenido y se purga su caché local. (El muro real es el backend
@@ -133,7 +144,7 @@
     var side = el('aside', 'yod-sidebar');
     side.innerHTML = '<a class="yod-brand" href="' + OS + '"><b>YOD</b><span>OS</span></a>'
       + '<nav class="yod-nav"><p class="yod-nav-label">Tableros</p><div id="yodNav"><span class="yod-nav-loading"><i class="ti ti-loader-2 yod-spin"></i> Cargando…</span></div></nav>'
-      + '<div class="yod-foot"><div class="yod-avatar" id="yodAv">YO</div><div class="yod-id"><strong id="yodName">Equipo YOD</strong><span id="yodRole">Verificando…</span></div></div>';
+      + '<div class="yod-foot"><div class="yod-avatar" id="yodAv">YO</div><div class="yod-id"><strong id="yodName">Equipo YOD</strong><span id="yodRole">Verificando…</span></div><button class="yod-out" id="yodOut" type="button" title="Cerrar sesión" aria-label="Cerrar sesión"><i class="ti ti-logout"></i></button></div>';
 
     var main = el('main', 'yod-main');
     var top = el('header', 'yod-topbar');
@@ -147,6 +158,8 @@
     document.body.appendChild(shell);
 
     wireDrawer(shell, scrim);
+    var out = document.getElementById('yodOut');
+    if (out) out.addEventListener('click', function () { if (confirm('¿Cerrar tu sesión en este dispositivo?')) logout(); });
     // El menú NO se pinta hasta validar la sesión (fail-closed): queda "Cargando…"
     wireSearch();
     loadIdentity();
