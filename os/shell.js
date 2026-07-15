@@ -62,17 +62,35 @@
 
     var main = el('main', 'yod-main');
     var top = el('header', 'yod-topbar');
-    top.innerHTML = '<button class="yod-search" id="yodSearch" type="button"><i class="ti ti-search"></i><span>Buscar un tablero…</span><kbd>⌘ K</kbd></button>'
+    top.innerHTML = '<button class="yod-burger" id="yodBurger" type="button" aria-label="Abrir tableros"><i class="ti ti-menu-2"></i></button>'
+      + '<button class="yod-search" id="yodSearch" type="button"><i class="ti ti-search"></i><span>Buscar un tablero…</span><kbd>⌘ K</kbd></button>'
       + '<div class="yod-top-actions"><span class="yod-role" id="yodChip" style="display:none"></span><a class="yod-home" href="' + OS + '" title="Ir a YOD OS"><i class="ti ti-home-2"></i></a></div>';
     main.appendChild(top); main.appendChild(canvas);
 
     var shell = el('div', 'yod-shell'); shell.appendChild(side); shell.appendChild(main);
+    var scrim = el('div', 'yod-scrim'); shell.appendChild(scrim);
     document.body.appendChild(shell);
 
+    wireDrawer(shell, scrim);
     renderNav(defaultRows(), cur);
     wireSearch();
     loadIdentity();
     loadCatalog(cur);
+  }
+
+  function wireDrawer(shell, scrim) {
+    function open() { shell.classList.add('yod-nav-open'); }
+    function close() { shell.classList.remove('yod-nav-open'); }
+    function toggle() { shell.classList.toggle('yod-nav-open'); }
+    var burger = document.getElementById('yodBurger');
+    if (burger) burger.addEventListener('click', toggle);
+    scrim.addEventListener('click', close);
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') close(); });
+    // al tocar un tablero, cerrar el cajón (aunque navegue, se siente app-nativo)
+    var nav = document.getElementById('yodNav');
+    if (nav) nav.addEventListener('click', function (e) { if (e.target.closest('.yod-nav-item')) close(); });
+    // cerrar al pasar a escritorio
+    if (window.matchMedia) window.matchMedia('(min-width:901px)').addEventListener('change', function (m) { if (m.matches) close(); });
   }
 
   function loadCatalog(cur) {

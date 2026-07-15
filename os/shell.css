@@ -63,6 +63,13 @@ body.yod-on{margin:0;background:#f6f3ed}
 .yod-home{width:39px;height:39px;border:1px solid var(--yline);border-radius:9px;background:var(--ycard);color:var(--yink);
   display:grid;place-items:center;cursor:pointer;font-size:17px;text-decoration:none}
 .yod-home:hover{border-color:var(--yg)}
+/* botón menú (hamburguesa) — solo visible en móvil */
+.yod-burger{display:none;width:40px;height:40px;flex:none;border:1px solid var(--yline);border-radius:10px;background:var(--ycard);
+  color:var(--yink);place-items:center;cursor:pointer;font-size:20px;padding:0}
+.yod-burger:active{background:var(--ypaper-2)}
+/* velo oscuro detrás del cajón */
+.yod-scrim{position:fixed;inset:0;background:rgba(23,20,15,.5);backdrop-filter:blur(2px);opacity:0;pointer-events:none;
+  transition:opacity .28s ease;z-index:205}
 
 /* ---- lienzo (contiene el contenido original del board) ---- */
 .yod-canvas{background:#f6f3ed;flex:1;min-width:0}
@@ -81,9 +88,25 @@ body.yod-on{margin:0;background:#f6f3ed}
 .yod-dialog a small{font-size:11px;color:var(--ymuted)}
 .yod-spin{animation:yodspin 1s linear infinite}@keyframes yodspin{to{transform:rotate(1turn)}}
 
-/* ---- responsive ---- */
-@media(max-width:980px){.yod-shell{grid-template-columns:76px minmax(0,1fr)}.yod-sidebar{padding-inline:12px}
-  .yod-brand{padding-inline:5px}.yod-brand span,.yod-nav-item span,.yod-id{display:none}
-  .yod-nav-item{justify-content:center}.yod-foot{justify-content:center;padding-inline:0}}
-@media(max-width:680px){.yod-shell{display:block}.yod-sidebar{display:none}.yod-topbar{height:56px;padding:0 14px}
-  .yod-search{width:auto;flex:1}.yod-search kbd{display:none}}
+/* ---- responsive · móvil como app (cajón deslizante) ---- */
+@media(max-width:900px){
+  .yod-shell{display:block}
+  /* la barra lateral pasa a ser un cajón off-canvas que entra al tocar ☰ */
+  .yod-sidebar{position:fixed;left:0;top:0;height:100dvh;width:min(304px,86vw);z-index:210;padding:20px 16px 18px;
+    transform:translateX(-100%);transition:transform .28s cubic-bezier(.4,0,.2,1);box-shadow:0 0 70px rgba(0,0,0,.34)}
+  .yod-shell.yod-nav-open .yod-sidebar{transform:translateX(0)}
+  .yod-shell.yod-nav-open .yod-scrim{opacity:1;pointer-events:auto}
+  .yod-burger{display:grid}
+  .yod-topbar{height:56px;padding:0 12px;gap:11px}
+  /* en móvil el buscador se reduce a la lupa (⌘K abre el panel completo) */
+  .yod-search{width:40px;flex:none;justify-content:center;padding:0}
+  .yod-search span,.yod-search kbd{display:none}
+  /* dentro del cajón: labels completos y targets grandes para el dedo */
+  .yod-brand span{display:inline}
+  .yod-nav-item{padding:13px 14px;font-size:15px;justify-content:flex-start;gap:14px}
+  .yod-nav-item span{display:inline}
+  .yod-id{display:flex}
+  .yod-nav-item i{font-size:21px}
+  .yod-canvas{padding:0}
+}
+@media(max-width:430px){.yod-role{display:none}.yod-topbar{padding:0 10px}}
