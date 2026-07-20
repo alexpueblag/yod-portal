@@ -60,7 +60,8 @@
     if(state.loading)return;state.loading=true;$('refresh').disabled=true;var _mr=$('mobile-refresh');if(_mr)_mr.disabled=true;setConnection('','Actualizando');
     var controller=new AbortController();var timeout=setTimeout(function(){controller.abort();},9000);
     try{
-      var response=await fetch(CATALOG_ENDPOINT+'&cb='+Date.now(),{cache:'no-store',credentials:'omit',signal:controller.signal});
+      var _tk='';try{_tk=localStorage.getItem(TOKEN_KEY)||'';}catch(_e){}
+      var response=await fetch(CATALOG_ENDPOINT+(_tk?'&k='+encodeURIComponent(_tk):'')+'&cb='+Date.now(),{cache:'no-store',credentials:'omit',signal:controller.signal});
       if(!response.ok)throw new Error('HTTP '+response.status);var data=await response.json();
       if(!data.ok||!Array.isArray(data.rows))throw new Error('Respuesta incompleta');
       renderModules(data.rows);$('updated-at').textContent='Hoy, '+timeLabel(new Date());setConnection('ok','En línea');

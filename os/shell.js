@@ -203,7 +203,8 @@
   }
 
   function loadCatalog(cur) {
-    fetch(PORTAL + '&cb=' + Date.now(), { cache: 'no-store', credentials: 'omit' })
+    var k = tok();
+    fetch(PORTAL + (k ? '&k=' + encodeURIComponent(k) : '') + '&cb=' + Date.now(), { cache: 'no-store', credentials: 'omit' })
       .then(function (r) { return r.json(); })
       .then(function (d) {
         if (!d || !d.ok || !Array.isArray(d.rows)) return;
