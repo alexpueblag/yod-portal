@@ -11,6 +11,11 @@
   };
   var state={modules:[],rawRows:[],role:'vista',boards:'',profileReady:false,loading:false,opsScope:'mias',allTasks:[]};
   var $=function(id){return document.getElementById(id);};
+  // Higiene de sesión en equipos compartidos: purga los datos sensibles cacheados
+  // (la lista de tareas de todos los responsables) y, al cerrar sesión, el token del Portero.
+  var SENSITIVE_CACHES=['aurum-cache-v5','yod_ops_me'];
+  function purgarDatosSensibles(){SENSITIVE_CACHES.forEach(function(k){try{localStorage.removeItem(k);}catch(_e){}});}
+  function cerrarSesion(){try{localStorage.removeItem(TOKEN_KEY);}catch(_e){}purgarDatosSensibles();try{location.reload();}catch(_e){location.href=location.pathname;}}
 
   function greeting(){var h=new Date().getHours();return h<12?'Buenos días':h<19?'Buenas tardes':'Buenas noches';}
   function timeLabel(date){return new Intl.DateTimeFormat('es-MX',{hour:'2-digit',minute:'2-digit'}).format(date);}
@@ -73,7 +78,7 @@
 
   async function loadIdentity(){
     var token='';try{token=localStorage.getItem(TOKEN_KEY)||'';}catch(_error){}
-    if(!token){$('access-status').textContent='Requiere acceso';state.profileReady=false;return;}
+    if(!token){purgarDatosSensibles();$('access-status').textContent='Requiere acceso';state.profileReady=false;return;}
     try{
       var response=await fetch(PORTERO_ENDPOINT+'?recurso=canje&t='+encodeURIComponent(token),{cache:'no-store',credentials:'omit'});
       var raw=await response.text();var data=null;try{data=JSON.parse(raw);}catch(_p){}
@@ -92,7 +97,7 @@
       var visibleQuick=0;document.querySelectorAll('.quick-card[data-system-id]').forEach(function(el){var allowed=window.YodAccessPolicy.canOpen(state.boards,el.dataset.systemId,state.role);el.classList.toggle('hidden',!allowed);if(allowed)visibleQuick++;});$('quick-section').classList.toggle('hidden',visibleQuick===0);
       if(state.rawRows.length)renderModules(state.rawRows);
       var requests=[loadPulse(token)];if(window.YodAccessPolicy.hasCode(state.boards,'TA')||state.role==='admin')requests.push(loadOperations(token));else renderOperationsLocked();await Promise.allSettled(requests);
-    }catch(err){var d=(err&&err._diag)||'error';$('user-role').textContent='Sesión por validar';$('access-status').textContent='Pendiente ('+d+')';$('access-status').title='Diagnóstico del canje: '+d+' — revisa la consola para el detalle.';console.warn('[YOD OS] identidad no validada:',d,err);}
+    }catch(err){purgarDatosSensibles();var d=(err&&err._diag)||'error';$('user-role').textContent='Sesión por validar';$('access-status').textContent='Pendiente ('+d+')';$('access-status').title='Diagnóstico del canje: '+d+' — revisa la consola para el detalle.';console.warn('[YOD OS] identidad no validada:',d,err);}
   }
 
   function renderOperationsLocked(){var panel=$('operation-panel');panel.setAttribute('aria-busy','false');panel.innerHTML='<div class="operation-message"><i class="ti ti-shield-lock"></i><span>Operación semanal no está incluida en los permisos de esta cuenta.</span></div>';}
@@ -237,7 +242,7 @@
   function openSearch(){var dialog=$('search-dialog');dialog.showModal();$('search-input').value='';buildSearch('');setTimeout(function(){$('search-input').focus();},0);}
   $('welcome-title').firstChild.textContent=greeting()+', ';
   function refreshAll(){loadCatalog();var token='';try{token=localStorage.getItem(TOKEN_KEY)||'';}catch(_error){}if(!token||!state.profileReady)return;loadPulse(token);if(window.YodAccessPolicy.hasCode(state.boards,'TA')||state.role==='admin')loadOperations(token);}
-  $('refresh').addEventListener('click',refreshAll);var _mrb=$('mobile-refresh');if(_mrb)_mrb.addEventListener('click',refreshAll);$('search-trigger').addEventListener('click',openSearch);$('search-input').addEventListener('input',function(e){buildSearch(e.target.value);});
+  $('refresh').addEventListener('click',refreshAll);var _mrb=$('mobile-refresh');if(_mrb)_mrb.addEventListener('click',refreshAll);$('search-trigger').addEventListener('click',openSearch);$('search-input').addEventListener('input',function(e){buildSearch(e.target.value);});var _lo=$('logout');if(_lo)_lo.addEventListener('click',cerrarSesion);
   document.addEventListener('keydown',function(e){if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){e.preventDefault();openSearch();}});
   // Cajón lateral en móvil (☰) — misma navegación que escritorio
   (function(){var shell=document.querySelector('.app-shell');var burger=$('menu-toggle');var scrim=$('nav-scrim');if(!shell)return;if(window.matchMedia&&window.matchMedia('(max-width:900px)').matches){var seen=false;try{seen=sessionStorage.getItem('yod_drawer_seen')==='1';}catch(e){}if(!seen){shell.classList.add('nav-open');try{sessionStorage.setItem('yod_drawer_seen','1');}catch(e){}}}function closeNav(){shell.classList.remove('nav-open');}if(burger)burger.addEventListener('click',function(){shell.classList.toggle('nav-open');});if(scrim)scrim.addEventListener('click',closeNav);document.addEventListener('keydown',function(e){if(e.key==='Escape')closeNav();});var nav=$('nav-modules');if(nav)nav.addEventListener('click',function(e){if(e.target.closest('.nav-item'))closeNav();});if(window.matchMedia){var mq=window.matchMedia('(min-width:901px)');mq.addEventListener('change',function(m){if(m.matches)closeNav();});}})();
