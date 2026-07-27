@@ -302,12 +302,13 @@ const TRA={x:760,y:620,w:480,h:92};
 const RING={x:760,y:702,rx:440,ry:118};
 const TAL={x:760,y:792,w:544,h:46};
 const PROJ=[
- {x:420, n:"CASA ALYSA",  f:"7/27",  p:0.81,  sub:"hitos · 81% obra · acabados", t:"alysa"},
+ {x:420, n:"CASA ALYSA",  f:"—",  p:0,  sub:"hitos · acabados", t:"alysa"},
  {x:790, n:"REAL MIRAMAR",f:"—",  p:0,  sub:"apartados · sin urbanizar", t:"miramar"},
  {x:1160,n:"CASA MARÍA",  f:"—",     p:0.06,  sub:"codesarrollo · arranque", t:"maria"}
 ];
 const PJY=984;
 let TRAD=null;                        // trámites de Miramar, EN LÍNEA
+let TALD=null;                        // tareas del board-aurum (Taller), EN LÍNEA
 let APSET=new Set();                  // lotes apartados pintados en la planta
 
 /* ═══ 1 · TABLERO ═══ */
@@ -681,7 +682,7 @@ function taller(){
   for(let f=0;f<fil;f++)for(let c=0;c<cols;c++){
     const i=f*cols+c, bx=x0+8+c*iw, by=y0+5+f*ih;
     quad(bx+0.6,by+0.5,iw-1.2,ih-1,"rgba(40,30,14,.55)");     // hueco troquelado
-    if(i<66){                                                  // TAPA de huacal con su cinta
+    if(i<(TALD?TALD.done:0)){                                  // TAPA de huacal con su cinta
       quad(bx+1.4,by+1.1,iw-2.8,ih-2.2,"#B08A4E");
       quad(bx+1.4,by+1.1,iw-2.8,1.1,"rgba(255,255,255,.28)");
       const [ax,ay]=P(bx+1.4,by+1.1),[bx2,by2]=P(bx+iw-1.4,by+ih-1.1);
@@ -691,7 +692,10 @@ function taller(){
       g.moveTo(cx2,cy2); g.lineTo(dx2,dy2); g.stroke();
     }
   }
-  placaKPI(x,832,300,"TALLER AURUM","66/96","cerradas · 3 bloqueadas",66/96,M.laton);
+  placaKPI(x,832,300,"TALLER AURUM",
+    TALD?(TALD.done+"/"+TALD.tot):"—",
+    TALD?("cerradas · "+TALD.blq+" bloqueadas"):"sin línea",
+    TALD?TALD.done/Math.max(1,TALD.tot):0, M.laton);
 }
 
 /* ═══ 8 · PROYECTOS ═══ */
@@ -932,7 +936,7 @@ const KPIHEX_TOP=[
 const KPIHEX_BOT=[
  {n:"—",    lbl:"TRÁMITES MIRAMAR", c:"ambar", st:"fuente",    src:"board Real Miramar"},
  {n:"—",    lbl:"BLOQUEADOS",       c:"rojo",  st:"fuente",    src:"board Real Miramar"},
- {n:"66/96",lbl:"TALLER CERRADAS",  c:"verde", st:"fuente",    src:"board Real Miramar"},
+ {n:"—",    lbl:"TALLER CERRADAS",  c:"ambar", st:"fuente",    src:"board-aurum (operación)"},
  {n:"81%",  lbl:"OBRA ALYSA",       c:"verde", st:"fuente",    src:"TRACK_ALYSA"},
  {n:"31%",  lbl:"COBRADO ALYSA",    c:"rojo",  st:"fuente",    src:"flujo Casa Alysa"},
  {n:"—",    lbl:"APARTADOS",        c:"ambar", st:"fuente",    src:"board Real Miramar"},
@@ -1180,12 +1184,74 @@ async function conectarMiramar(){
   }catch(e){ console.warn("Miramar sin línea", e); }
 }
 
+/* ═══ TRAMO ALYSA + MARÍA · EN LÍNEA · hitos de sus tracks (usa la clave del candado) ═══ */
+async function conectarTracks(){
+  const uno=async (track,idx)=>{
+    const r=await fetch(GATE_GAS+"?recurso=track&track="+track+"&k="+encodeURIComponent(CLAVE_OK||""))
+      .then(x=>x.json());
+    if(!r.ok||!Array.isArray(r.items)) throw r.error||0;
+    const tot=r.items.length,
+          hechos=r.items.filter(i=>String(i.estado||"").toLowerCase()==="hecho").length;
+    PROJ[idx].f=hechos+"/"+tot; PROJ[idx].p=tot?hechos/tot:0;
+    return hechos+"/"+tot;
+  };
+  try{
+    const [a,m]=await Promise.allSettled([uno("alysa",0),uno("maria",2)]);
+    pintar();
+    console.log("✓ tracks en línea · alysa "+(a.value||"sin línea")+" · maría "+(m.value||"sin línea"));
+  }catch(e){ console.warn("tracks sin línea", e); }
+}
+
+/* ═══ TRAMO TALLER · EN LÍNEA · el board-aurum de Operación (adapter operations) ═══ */
+const TALLER_GAS="https://script.google.com/macros/s/AKfycbyZ1p7rGHuU01vWBbynGdmlKTnlyH9CIXyhKivqLHa4rLxcHNneJKsZHv7smnjLsfH1/exec";
+function tareasResumen(tasks){
+  const arch=t=>t&&(t.archivada===true||String(t.archivada).toLowerCase()==="true"||
+    t.borrada===true||String(t.borrada).toLowerCase()==="true");
+  const st=t=>String(t.estado||"").trim().toLowerCase();
+  const act=(Array.isArray(tasks)?tasks:[]).filter(t=>!arch(t));
+  return { tot:act.length,
+    done:act.filter(t=>st(t)==="terminado"||st(t)==="completado").length,
+    blq:act.filter(t=>["en standby","en standby.","en revisión","en revision","subido","detenido"].includes(st(t))).length };
+}
+async function conectarTaller(){
+  let tasks=null, via="live";
+  try{
+    const r=await fetch(TALLER_GAS,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},
+      body:JSON.stringify({k:CLAVE_OK||"",action:"getAll"}),redirect:"follow",cache:"no-store"});
+    const j=await r.json();
+    if(j&&j.ok&&Array.isArray(j.tasks||j.data)) tasks=j.tasks||j.data; else throw j&&j.error||0;
+  }catch(e){
+    try{ const raw=localStorage.getItem("aurum-cache-v5");        // mismo caché que el board-aurum
+      const c=raw&&JSON.parse(raw); if(Array.isArray(c)&&c.length){ tasks=c; via="caché del board"; } }catch(_){}
+    if(!tasks){ console.warn("Taller sin línea", e); return; }
+  }
+  TALD=tareasResumen(tasks);
+  KPIHEX_BOT[2]={n:TALD.done+"/"+TALD.tot, lbl:"TALLER CERRADAS",
+    c:TALD.blq?"ambar":"verde", st:"linea"};
+  pintar();
+  console.log("✓ Taller en línea ("+via+") · "+TALD.done+"/"+TALD.tot+" · "+TALD.blq+" bloqueadas");
+}
+
+/* ═══ SONDA finance · solo reporta la forma del dato, no pinta nada ═══ */
+async function sondaFinance(){
+  try{
+    const r=await fetch("https://script.google.com/macros/s/AKfycbxbQpBn7fpbrjXppE3e-DFMBjDmZ8Yy9CZqfuZa4vHNWthS0fl2EzrKnMHHOtPGzTA/exec",
+      {method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},
+       body:JSON.stringify({k:CLAVE_OK||"",action:"getAll"}),redirect:"follow"});
+    const j=await r.json();
+    if(j&&j.ok) console.log("sonda finance · campos disponibles:",Object.keys(j.data||{}),
+      "pagos:",(j.data&&j.data.pagos||[]).length,"ingresos:",(j.data&&j.data.ingresosEsperados||[]).length);
+  }catch(e){}
+}
+
 /* ═══ EL CANDADO · valida contra el mismo GAS que los tracks ═══ */
 const GATE_GAS="https://script.google.com/macros/s/AKfycbwlDDCWWzOWYZsUpBU9uqsQ7aenQ469PF6s6FkNlBFS1_cJSU5njG9oQmuyELy5zlqzFg/exec";
 const LSK="pyod_clave_v1", GT=document.getElementById("gate");
+let CLAVE_OK=null;
 async function validar(k){
   const r=await fetch(GATE_GAS+"?recurso=track&track=alysa&k="+encodeURIComponent(k)).then(x=>x.json());
   if(!r.ok) throw r.error||"error";
+  CLAVE_OK=k;
 }
 function abrir(){
   GT.classList.add("off");
@@ -1193,6 +1259,9 @@ function abrir(){
   pintar();                                                 // el lienzo ya tiene tamaño real
   conectarPPP();
   conectarMiramar();
+  conectarTracks();
+  conectarTaller();
+  sondaFinance();
 }
 async function entrar(){
   const v=document.getElementById("gateClave").value.trim();
