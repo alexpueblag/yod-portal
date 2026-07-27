@@ -291,7 +291,7 @@ function perfil(nodo,st){
 /* ═══ DATOS ═══ */
 const ORIG=[
  {x:190, k:"ADA", n:"A DE A",       f:"4/6",  h:6,  p:4, ic:"casa",    sub:"contratos · meta"},
- {x:465, k:"PPP", n:"PPP",          f:"6/8",  h:8,  p:6, ic:"graf",    sub:"pagados · meta"},
+ {x:465, k:"PPP", n:"PPP",          f:"—",  h:8,  p:0, ic:"graf",    sub:"pagados · meta"},
  {x:740, k:"OBR", n:"OBRA",         f:"7/9",  h:9,  p:7, ic:"grua",    sub:"obra nueva · meta"},
  {x:1015,k:"LOT", n:"LOTES",        f:"7/10", h:10, p:7, ic:"mosaico", sub:"apartados · meta"},
  {x:1290,k:"CDS", n:"CODESARROLLO", f:"2/3",  h:3,  p:2, ic:"pieza",   sub:"alianzas · meta"}
@@ -303,10 +303,12 @@ const RING={x:760,y:702,rx:440,ry:118};
 const TAL={x:760,y:792,w:544,h:46};
 const PROJ=[
  {x:420, n:"CASA ALYSA",  f:"7/27",  p:0.81,  sub:"hitos · 81% obra · acabados", t:"alysa"},
- {x:790, n:"REAL MIRAMAR",f:"2/47",  p:2/47,  sub:"apartados · sin urbanizar", t:"miramar"},
+ {x:790, n:"REAL MIRAMAR",f:"—",  p:0,  sub:"apartados · sin urbanizar", t:"miramar"},
  {x:1160,n:"CASA MARÍA",  f:"—",     p:0.06,  sub:"codesarrollo · arranque", t:"maria"}
 ];
 const PJY=984;
+let TRAD=null;                        // trámites de Miramar, EN LÍNEA
+let APSET=new Set();                  // lotes apartados pintados en la planta
 
 /* ═══ 1 · TABLERO ═══ */
 function tablero(){
@@ -405,7 +407,7 @@ function riel(){
   });
   // rótulos curvos atornillados
   rotuloRiel(0.25,"SUBE A VENTANILLA",M.ambar,0);
-  rotuloRiel(0.75,"REGRESA A CORREGIR · 37",M.rojo,46);
+  rotuloRiel(0.75,"REGRESA A CORREGIR"+(TRAD?" · "+TRAD.blq:""),M.rojo,46);
 }
 function rotuloRiel(t,s,col,dx){
   const [x0,y]=anilloEje(t), x=x0+(dx||0), [px,py]=P(x,y), sc=sx(y);
@@ -643,25 +645,29 @@ function tramites(){
   const {x,y,w,h}=TRA;
   quad(x-w/2+5,y-h/2+6,w,h,"rgba(70,58,36,.26)");
   quad(x-w/2,y-h/2,w,h,"#C2A171","rgba(107,82,44,.65)",2);
+  // TRAD llega del GAS del board Miramar; sin línea, la charola dice la verdad: "—"
+  const A=TRAD?TRAD.apr:0, B=TRAD?TRAD.blq:0, TOT=TRAD?TRAD.tot:48;
   const cols=16,fil=3;
   for(let f=0;f<fil;f++)for(let c=0;c<cols;c++){
-    const i=f*cols+c; if(i>=48) break;
+    const i=f*cols+c; if(i>=TOT) break;
     const cw=(w-30)/cols, ch=(h-22)/fil;
     const cx=x-w/2+15+c*cw, cy=y-h/2+11+f*ch;
-    if(i<7){                                   // aprobados
+    if(i<A){                                   // aprobados
       quad(cx+2,cy+2,cw-6,ch-6,M.verdeT,"rgba(30,70,40,.5)",1);
       const [px,py]=P(cx+cw/2,cy+ch/2), s=sx(cy);
       g.save(); g.translate(px,py); g.strokeStyle="#EAFBEE"; g.lineWidth=2.6*s;
       g.lineCap="round"; g.beginPath(); g.moveTo(-5*s,0); g.lineTo(-1*s,4*s);
       g.lineTo(6*s,-5*s); g.stroke(); g.restore();
-    } else if(i<44){                           // 37 bloqueados: piso rojo, VACÍOS
+    } else if(i<A+B){                          // bloqueados: piso rojo, VACÍOS
       quad(cx+2,cy+2,cw-6,ch-6,M.rojoP,"rgba(90,26,22,.6)",1);
       for(let k=0;k<3;k++) quad(cx+4+k*((cw-10)/3),cy+4,(cw-10)/6,ch-10,"rgba(255,255,255,.38)");
-    } else {                                   // 4 en curso: kraft vacío
+    } else {                                   // en curso: kraft vacío
       quad(cx+2,cy+2,cw-6,ch-6,M.kraft,"rgba(90,76,48,.4)",1);
     }
   }
-  placaKPI(x,y+h/2+8,344,"TRÁMITES · REAL DE MIRAMAR","7/48 · 37 BLOQUEADOS",null,7/48,M.ambar,37/48);
+  placaKPI(x,y+h/2+8,344,"TRÁMITES · REAL DE MIRAMAR",
+    TRAD?(TRAD.apr+"/"+TRAD.tot+" · "+TRAD.blq+" BLOQUEADOS"):"— · sin línea",
+    null, TRAD?TRAD.apr/TRAD.tot:0, M.ambar, TRAD?TRAD.blq/TRAD.tot:0);
 }
 
 /* ═══ 7 · TALLER · estante en ALZADO, 96 huacales, 44 llenos ═══ */
@@ -802,7 +808,7 @@ function maqueta(t,x,y,prog){
     });
     // 17 lotes corridos del lado opuesto · los 2 APARTADOS pintados
     for(let i=0;i<17;i++){ const lx=-52+i*6.2;
-      if(i===4||i===11){                                         // APARTADO = pieza puesta
+      if(APSET.has(i)){                                          // APARTADO = pieza puesta
         g.fillStyle="#3FAE5E"; g.fillRect(lx*E,-4*V,5.4*E,7*V);
         g.fillStyle="#93DFA6"; g.fillRect(lx*E,-4*V,5.4*E,1.2*V);
         g.strokeStyle="rgba(30,70,40,.65)"; g.lineWidth=1;
@@ -917,19 +923,19 @@ const HEXCOL={verde:"#3FAE5E",ambar:"#E8A02B",rojo:"#C0453A",azul:"#2F5F92",gris
 //         · "tentativo" (gris, el dato es de relleno y no tiene fuente todavía)
 const KPIHEX_TOP=[
  {n:"4/6",  lbl:"CONTRATOS A DE A", c:"ambar", st:"fuente",    src:"Sheet CRM - YOD"},
- {n:"6/8",  lbl:"PPP PAGADOS",      c:"verde", st:"fuente",    src:"Sheet CRM - YOD"},
+ {n:"—",    lbl:"PPP PAGADOS",      c:"ambar", st:"fuente",    src:"GAS plan-potencial"},
  {n:"84",   lbl:"LEADS EN CRM",     c:"azul",  st:"tentativo", src:"—"},
  {n:"12",   lbl:"VAN TARDE",        c:"rojo",  st:"tentativo", src:"—"},
  {n:"$7.3M",lbl:"EN JUEGO TARDE",   c:"rojo",  st:"tentativo", src:"—"},
  {n:"1",    lbl:"META CIERRES · MES",c:"verde",st:"fuente",    src:"definir dónde vive"},
  null, null];
 const KPIHEX_BOT=[
- {n:"7/48", lbl:"TRÁMITES MIRAMAR", c:"ambar", st:"fuente",    src:"board Real Miramar"},
- {n:"37",   lbl:"BLOQUEADOS",       c:"rojo",  st:"fuente",    src:"board Real Miramar"},
+ {n:"—",    lbl:"TRÁMITES MIRAMAR", c:"ambar", st:"fuente",    src:"board Real Miramar"},
+ {n:"—",    lbl:"BLOQUEADOS",       c:"rojo",  st:"fuente",    src:"board Real Miramar"},
  {n:"66/96",lbl:"TALLER CERRADAS",  c:"verde", st:"fuente",    src:"board Real Miramar"},
  {n:"81%",  lbl:"OBRA ALYSA",       c:"verde", st:"fuente",    src:"TRACK_ALYSA"},
  {n:"31%",  lbl:"COBRADO ALYSA",    c:"rojo",  st:"fuente",    src:"flujo Casa Alysa"},
- {n:"2/47", lbl:"APARTADOS",        c:"ambar", st:"fuente",    src:"board Real Miramar"},
+ {n:"—",    lbl:"APARTADOS",        c:"ambar", st:"fuente",    src:"board Real Miramar"},
  {n:"$1.7M",lbl:"CON FOLIO CODES",  c:"verde", st:"fuente",    src:"contratos con folio"}, null];
 function hexTile(cx,cy,k){
   const r=27;
@@ -1149,6 +1155,31 @@ async function conectarPPP(){
   }catch(e){ console.warn("PPP sin línea: quedan los valores impresos", e); }
 }
 
+/* ═══ TRAMO MIRAMAR · EN LÍNEA · GAS del board Real de Miramar ═══ */
+const MIRA_GAS="https://script.google.com/macros/s/AKfycbzR0-hoPMs7N_1nSD0pFbJtTmaN4kLCIbNFsYw7VeM3xnfu12TSKJSkMyNxm7KNn7o/exec";
+async function conectarMiramar(){
+  try{
+    const r=await fetch(MIRA_GAS+"?recurso=board&cb="+Date.now(),{cache:"no-store"});
+    const j=await r.json(); if(!j.ok||!j.tablas) throw 0;
+    const tr=j.tablas.TRAMITES||[], lo=j.tablas.LOTES||[];
+    const est=e=>String(e.estado||"").trim().toLowerCase();
+    TRAD={ apr:tr.filter(t=>est(t)==="verde").length,
+           blq:tr.filter(t=>est(t)==="rojo").length,
+           tot:tr.length };
+    const ap=lo.filter(l=>est(l)==="apartado").length;
+    const POS=[4,11,7,14,1,9,16,3,12,5,0,8,15,2,10,6,13];
+    APSET=new Set(POS.slice(0,Math.min(ap,POS.length)));
+    PROJ[1].f=ap+"/"+lo.length; PROJ[1].p=lo.length?ap/lo.length:0;
+    KPIHEX_BOT[0]={n:TRAD.apr+"/"+TRAD.tot, lbl:"TRÁMITES MIRAMAR",
+      c:TRAD.apr/TRAD.tot<0.5?"ambar":"verde", st:"linea"};
+    KPIHEX_BOT[1]={n:String(TRAD.blq), lbl:"BLOQUEADOS", c:TRAD.blq?"rojo":"verde", st:"linea"};
+    KPIHEX_BOT[5]={n:ap+"/"+lo.length, lbl:"APARTADOS", c:ap>2?"verde":"ambar", st:"linea"};
+    pintar();
+    console.log("✓ Miramar en línea · trámites "+TRAD.apr+"/"+TRAD.tot+
+      " · "+TRAD.blq+" bloqueados · apartados "+ap+"/"+lo.length);
+  }catch(e){ console.warn("Miramar sin línea", e); }
+}
+
 /* ═══ EL CANDADO · valida contra el mismo GAS que los tracks ═══ */
 const GATE_GAS="https://script.google.com/macros/s/AKfycbwlDDCWWzOWYZsUpBU9uqsQ7aenQ469PF6s6FkNlBFS1_cJSU5njG9oQmuyELy5zlqzFg/exec";
 const LSK="pyod_clave_v1", GT=document.getElementById("gate");
@@ -1161,6 +1192,7 @@ function abrir(){
   document.getElementById("w").style.display="";
   pintar();                                                 // el lienzo ya tiene tamaño real
   conectarPPP();
+  conectarMiramar();
 }
 async function entrar(){
   const v=document.getElementById("gateClave").value.trim();
