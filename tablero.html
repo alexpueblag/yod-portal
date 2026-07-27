@@ -309,6 +309,7 @@ const PROJ=[
 const PJY=984;
 let TRAD=null;                        // trámites de Miramar, EN LÍNEA
 let TALD=null;                        // tareas del board-aurum (Taller), EN LÍNEA
+let CODM=null;                        // $ con folio del portal Co-desarrolladores
 let APSET=new Set();                  // lotes apartados pintados en la planta
 
 /* ═══ 1 · TABLERO ═══ */
@@ -884,7 +885,7 @@ function bordes(){
   g.strokeStyle=M.rojo; g.lineWidth=2.6*ds; g.lineCap="round"; g.stroke(); g.restore();
   g.fillStyle=M.tinta; g.textAlign="center"; g.textBaseline="middle";
   g.font="800 "+(11*ds).toFixed(1)+"px 'Helvetica Neue',Arial,sans-serif";
-  g.fillText("$1.7M",0,11*ds); g.restore();
+  g.fillText(CODM?("$"+(CODM/1e6).toFixed(1)+"M"):"—",0,11*ds); g.restore();
   // ARCHIVO · gaveta medio abierta
   quad(30,930,220,92,"#B49A6C","rgba(70,52,26,.6)",1.8);
   quad(38,938,204,74,"#8A6A38");
@@ -940,7 +941,7 @@ const KPIHEX_BOT=[
  {n:"81%",  lbl:"OBRA ALYSA",       c:"verde", st:"fuente",    src:"TRACK_ALYSA"},
  {n:"31%",  lbl:"COBRADO ALYSA",    c:"rojo",  st:"fuente",    src:"flujo Casa Alysa"},
  {n:"—",    lbl:"APARTADOS",        c:"ambar", st:"fuente",    src:"board Real Miramar"},
- {n:"$1.7M",lbl:"CON FOLIO CODES",  c:"verde", st:"fuente",    src:"contratos con folio"}, null];
+ {n:"—",    lbl:"CON FOLIO CODES",  c:"ambar", st:"fuente",    src:"portal Co-desarrolladores"}, null];
 function hexTile(cx,cy,k){
   const r=27;
   g.save(); g.translate(cx,cy);
@@ -1232,6 +1233,37 @@ async function conectarTaller(){
   console.log("✓ Taller en línea ("+via+") · "+TALD.done+"/"+TALD.tot+" · "+TALD.blq+" bloqueadas");
 }
 
+/* ═══ TRAMO CODES · $ con folio del portal Co-desarrolladores ═══ */
+const CODES_GAS="https://script.google.com/macros/s/AKfycbxoW0hz0nInT208B8L_WNEpYNW0iPTMNWosl3m3TG9VO6WVRVqh90xKLLSLRQCTEB9O3A/exec";
+function sumaInversiones(data){
+  const inv=(data&&(data.Inversiones||data.inversiones))||[];
+  const n=v=>{const x=Number(String(v==null?"":v).replace(/[^0-9.-]/g,""));return isFinite(x)?x:0;};
+  const act=inv.filter(r=>r&&String(r.folio||"").trim()&&
+    String(r.estado||"").toLowerCase()!=="cancelada");
+  return { total:act.reduce((a,r)=>a+n(r.montoTotal),0), n:act.length };
+}
+async function conectarCodes(){
+  let res=null, via="live";
+  try{
+    const r=await fetch(CODES_GAS,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},
+      body:JSON.stringify({action:"getAll",pass:CLAVE_OK||""}),redirect:"follow",cache:"no-store"});
+    const j=await r.json();
+    if(j&&j.ok&&j.data) res=sumaInversiones(j.data); else throw (j&&j.error)||0;
+  }catch(e){
+    try{ const raw=localStorage.getItem("codeyod-cache-v1");     // mismo origen que el portal
+      const c=raw&&JSON.parse(raw);
+      const data=c&&(c.data||c);
+      if(data&&(data.Inversiones||data.inversiones)){ res=sumaInversiones(data); via="caché del portal"; }
+    }catch(_){}
+    if(!res||!res.n){ console.warn("Codes sin línea", e); return; }
+  }
+  if(!res||!res.n) return;
+  CODM=res.total;
+  KPIHEX_BOT[6]={n:"$"+(res.total/1e6).toFixed(1)+"M", lbl:"CON FOLIO CODES", c:"verde", st:"linea"};
+  pintar();
+  console.log("✓ Codes en línea ("+via+") · $"+(res.total/1e6).toFixed(1)+"M en "+res.n+" folios");
+}
+
 /* ═══ SONDA finance · solo reporta la forma del dato, no pinta nada ═══ */
 async function sondaFinance(){
   try{
@@ -1261,6 +1293,7 @@ function abrir(){
   conectarMiramar();
   conectarTracks();
   conectarTaller();
+  conectarCodes();
   sondaFinance();
 }
 async function entrar(){
