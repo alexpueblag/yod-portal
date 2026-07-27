@@ -310,6 +310,7 @@ const PJY=984;
 let TRAD=null;                        // trámites de Miramar, EN LÍNEA
 let TALD=null;                        // tareas del board-aurum (Taller), EN LÍNEA
 let CODM=null;                        // $ con folio del portal Co-desarrolladores
+let ARCD=null;                        // perdidos reales del CRM (archivo)
 let APSET=new Set();                  // lotes apartados pintados en la planta
 
 /* ═══ 1 · TABLERO ═══ */
@@ -468,8 +469,8 @@ function origenes(){
    ════════════════════════════════════════════════════════════════════════ */
 const FIL=[["CONTACTABLE",18],["CALIFICADO",34],["PROPUESTA",21],["NEGOCIACIÓN",11]];
 const EMB=[["ADA","A DE A"],["PPP","PPP"],["OBR","OBRA"],["LOT","LOTES"],["CDS","CODES."]];
-const REP=[[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]];   // SIN FUENTE: el Sheet CRM - YOD aún no expone la lista
-const TOT=REP.flat().reduce((a,b)=>a+b,0);
+let REP=[[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]];     // lo llena conectarCRM() con leads reales
+let TOT=0;
 const ACCF=["Marcar y confirmar datos","Calificar terreno y presupuesto",
             "Entregar la propuesta","Cerrar y firmar"];
 
@@ -483,12 +484,16 @@ function leadCRM(i,j,m){
     valor:(1+((h>>>16)%14))*75000, ph:((h>>>7)%997)/997,
     emb:EMB[i][0], origen:EMB[i][1], filtro:FIL[j][0], accion:ACCF[j] };
 }
-// los 84 leads, calculados una sola vez: las dos vistas leen de aquí
-const LEADS=REP.map((fila,i)=>fila.map((n,j)=>
-  Array.from({length:n},(_,m)=>leadCRM(i,j,m))));
-const BLQ=[0,1,2,3].map(j=>LEADS.reduce((a,f)=>a+f[j].filter(L=>L.st==="rojo").length,0));
-const NBLQ=BLQ.reduce((a,b)=>a+b,0);
-const VBLQ=LEADS.flat(2).filter(L=>L.st==="rojo").reduce((a,L)=>a+L.valor,0);
+// la matriz embudo×filtro la llena el CRM real; vacía = charola sin línea
+let LEADS=REP.map(f=>f.map(()=>[])), BLQ=[0,0,0,0], NBLQ=0, VBLQ=0;
+function setLeadsCRM(matriz){
+  LEADS=matriz;
+  REP=LEADS.map(f=>f.map(c=>c.length));
+  TOT=REP.flat().reduce((a,b)=>a+b,0);
+  BLQ=[0,1,2,3].map(j=>LEADS.reduce((a,f)=>a+f[j].filter(L=>L.st==="rojo").length,0));
+  NBLQ=BLQ.reduce((a,b)=>a+b,0);
+  VBLQ=LEADS.flat(2).filter(L=>L.st==="rojo").reduce((a,L)=>a+(L.valor||0),0);
+}
 /* ═══ FOCOS · el retraso se ve como luz, no como tinta ═══════════════════════
    Parpadea del color de su embudo, así que de un vistazo ves QUÉ embudo trae más
    luces prendidas. Cada foco lleva su propia fase → el ritmo queda desordenado.
@@ -545,18 +550,20 @@ function placaCRM(){
   quad(x-w/2+4,py+5,w,ph,"rgba(80,66,42,.22)");
   quad(x-w/2,py,w,ph,M.hueso,"rgba(90,76,48,.45)",1.6);
   quad(x-w/2,py,w,7,M.huesoS);
-  txt("CRM YOD · 84 LEADS",x,py+17,19,M.tinta,800);
-  txt("18 · 34 · 21 · 11",x,py+38,24,M.tinta,800);
+  const CNT=[0,1,2,3].map(j=>REP.reduce((a,f)=>a+f[j],0));   // conteo VIVO por filtro
+  txt("CRM YOD · "+TOT+" LEADS",x,py+17,19,M.tinta,800);
+  txt(CNT.join(" · "),x,py+38,24,M.tinta,800);
   const bw=w-38, bx=x-bw/2, by=py+50, TON=["#B7CBDE","#2F5F92","#5E8DB8","#17364F"];
   quad(bx,by,bw,9,"#CFC3A6");
   let ac=0;
-  FIL.forEach(([n,c],j)=>{                      // cada tramo lleva su parte parada en rojo
+  CNT.forEach((c,j)=>{                          // cada tramo lleva su parte parada en rojo
+    if(!c) return;
     const seg=bw*c/TOT, rj=seg*BLQ[j]/c;
     quad(bx+ac,by,seg,9,TON[j]);
     quad(bx+ac+seg-rj,by,rj,9,M.rojo);
     ac+=seg;
   });
-  txt("contactable  ·  calificado  ·  propuesta  ·  negociación",x,py+ph+14,12,M.tinta2,600);
+  txt(FIL.map(f=>f[0].toLowerCase()).join("  ·  "),x,py+ph+14,12,M.tinta2,600);
   quad(x-100,py+ph+23,10,9,M.rojo,"rgba(90,30,20,.5)",1);
   txt(NBLQ+" van tarde · $"+(VBLQ/1e6).toFixed(1)+"M en juego",x-84,py+ph+28,12.5,M.rojoP,800,"left");
 }
@@ -602,7 +609,9 @@ function crmAbaco(){
   const {x,y,w,h}=CRM, x0=x-w/2;
   const lx=x0+9, rx0=x0+94, rx1=x+w/2-14, S=rx1-rx0;
   // las bandas se ensanchan con su carga: el ancho ya es el KPI
-  const Bd=[0]; FIL.forEach(([n,c])=>Bd.push(Bd[Bd.length-1]+c/TOT));
+  const CNTa=[0,1,2,3].map(j=>Math.max(1,REP.reduce((a,f)=>a+f[j],0)));   // mínimo 1: banda visible
+  const SUM=CNTa.reduce((a,b)=>a+b,0);
+  const Bd=[0]; CNTa.forEach(c=>Bd.push(Bd[Bd.length-1]+c/SUM));
   bandeja();
   for(let j=1;j<4;j++){
     const gx=rx0+S*Bd[j];
@@ -900,8 +909,9 @@ function bordes(){
   // ARCHIVO · gaveta medio abierta
   quad(30,930,220,92,"#B49A6C","rgba(70,52,26,.6)",1.8);
   quad(38,938,204,74,"#8A6A38");
-  txt("ARCHIVO · —",140,1042,12,M.tinta2,700);
-  for(let i=0;i<12;i++) hoyo(58+(i%6)*32, 958+((i/6)|0)*30);   // huecos: sin fuente, sin canicas
+  txt(ARCD?("ARCHIVO · "+ARCD.length+" PERDIDOS"):"ARCHIVO · —",140,1042,12,M.tinta2,700);
+  for(let i=0;i<12;i++){ const hx=58+(i%6)*32, hy=958+((i/6)|0)*30; hoyo(hx,hy);
+    if(ARCD&&ARCD[i]) canica(hx,hy,"gris",0,ARCD[i]); }
   // LEYENDA impresa
   const ly=696;
   tapa(30,ly-16,220,244);
@@ -1302,6 +1312,47 @@ async function conectarCodes(){
   console.log("✓ Codes en línea ("+via+") · $"+(res.total/1e6).toFixed(1)+"M en "+res.n+" folios");
 }
 
+/* ═══ TRAMO CRM · los DOS CRMs, cada quien su parte (decisión 27-jul) ═══ */
+const CRM_GAS="";   // ← pega aquí la URL /exec del endpoint del CRM (yod-crm-endpoint)
+function leadVivo(r){
+  const dias=r.dias==null?0:r.dias;
+  const h=[...String(r.id)].reduce((a,c)=>(a*31+c.charCodeAt(0))>>>0,7);
+  return { id:r.id, nodo:"CRM",
+    st: r.dias==null ? "azul" : (dias>21?"rojo":(dias>7?"ambar":"azul")),
+    dias:r.dias, zona:r.origen||"—", tipo:r.proyecto||r.nombre||"—",
+    resp:r.resp||"—", valor:r.valor||null, ph:(h%997)/997,
+    emb:r.emb, origen:{ADA:"A DE A",PPP:"PPP",OBR:"OBRA",LOT:"LOTES",CDS:"CODES."}[r.emb]||r.emb,
+    filtro:r.filtro, accion:r.tarea||"Dar seguimiento", nombre:r.nombre };
+}
+async function conectarCRM(){
+  if(!CRM_GAS) return;                               // sin endpoint aún: charola sin línea
+  try{
+    const r=await fetch(CRM_GAS+"?recurso=crm&k="+encodeURIComponent(CLAVE_OK||"")+
+      "&t="+Date.now(),{cache:"no-store"});
+    const j=await r.json(); if(!j.ok||!Array.isArray(j.leads)) throw j&&j.error||0;
+    const EI={ADA:0,PPP:1,OBR:2,LOT:3,CDS:4}, FI={"CONTACTABLE":0,"CALIFICADO":1,"PROPUESTA":2,"NEGOCIACIÓN":3};
+    const m=[0,1,2,3,4].map(()=> [ [],[],[],[] ]);
+    j.leads.forEach(r=>{
+      const i=EI[r.emb]??0, f=FI[r.filtro];
+      if(f==null) return;
+      m[i][f].push(leadVivo(r));
+    });
+    setLeadsCRM(m);
+    ARCD=(j.archivo||[]).map(r=>({...leadVivo(r), st:"gris", nodo:"ARC", accion:"Reactivable"}));
+    const k=j.kpis||{};
+    KPIHEX_TOP[0]={n:String(k.contratosADA??0), lbl:"CONTRATOS A DE A",
+      c:(k.contratosADA||0)>0?"verde":"rojo", st:"linea"};
+    KPIHEX_TOP[2]={n:String(k.total??TOT), lbl:"LEADS EN CRM", c:"azul", st:"linea"};
+    KPIHEX_TOP[3]={n:String(k.vanTarde??NBLQ), lbl:"VAN TARDE",
+      c:(k.vanTarde||0)>0?"rojo":"verde", st:"linea"};
+    KPIHEX_TOP[4]={n:"$"+((k.enJuego||0)/1e6).toFixed(1)+"M", lbl:"EN JUEGO",
+      c:"azul", st:"linea"};
+    pintar();
+    console.log("✓ CRM en línea · "+k.total+" leads · "+k.vanTarde+" van tarde · $"+
+      ((k.enJuego||0)/1e6).toFixed(2)+"M en juego · "+k.contratosADA+" contratos A de A");
+  }catch(e){ console.warn("CRM sin línea", e); }
+}
+
 /* ═══ SONDA finance · solo reporta la forma del dato, no pinta nada ═══ */
 async function sondaFinance(){
   try{
@@ -1332,6 +1383,7 @@ function abrir(){
   conectarTracks();
   conectarTaller();
   conectarCodes();
+  conectarCRM();
   sondaFinance();
 }
 async function entrar(){
