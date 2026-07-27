@@ -73,3 +73,16 @@ a:focus-visible,button:focus-visible,input:focus-visible,[tabindex]:focus-visibl
 .ops-whoami.ask{color:#7a5f28}
 .ops-whoami.ask select{border-color:var(--gold);background:#fbf4e4}
 @media(pointer:coarse){.ops-whoami select{min-height:40px;font-size:16px}}
+
+/* ── El tablero embebido · marco con la misma piel de las tarjetas del OS ── */
+.board-section{margin-top:34px}
+.board-frame{position:relative;background:var(--card);border:1px solid var(--line);border-radius:14px;
+  overflow:hidden;box-shadow:var(--shadow)}
+.board-frame:before{content:'';position:absolute;inset:0;pointer-events:none;border-radius:14px;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.7)}
+.board-frame iframe{display:block;width:100%;height:760px;border:0;background:var(--paper);
+  transition:height .3s cubic-bezier(.4,0,.2,1)}
+.board-foot{margin:11px 2px 0;font-size:11px;line-height:1.5;color:var(--muted)}
+.board-foot b{color:var(--ink);font-weight:600}
+@media(max-width:900px){ .board-frame iframe{height:560px} }
+@media(max-width:680px){ .board-frame iframe{height:440px} .board-foot{font-size:10.5px} }

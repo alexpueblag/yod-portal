@@ -248,3 +248,13 @@
   (function(){var shell=document.querySelector('.app-shell');var burger=$('menu-toggle');var scrim=$('nav-scrim');if(!shell)return;if(window.matchMedia&&window.matchMedia('(max-width:900px)').matches){var seen=false;try{seen=sessionStorage.getItem('yod_drawer_seen')==='1';}catch(e){}if(!seen){shell.classList.add('nav-open');try{sessionStorage.setItem('yod_drawer_seen','1');}catch(e){}}}function closeNav(){shell.classList.remove('nav-open');}if(burger)burger.addEventListener('click',function(){shell.classList.toggle('nav-open');});if(scrim)scrim.addEventListener('click',closeNav);document.addEventListener('keydown',function(e){if(e.key==='Escape')closeNav();});var nav=$('nav-modules');if(nav)nav.addEventListener('click',function(e){if(e.target.closest('.nav-item'))closeNav();});if(window.matchMedia){var mq=window.matchMedia('(min-width:901px)');mq.addEventListener('change',function(m){if(m.matches)closeNav();});}})();
   loadIdentity();loadCatalog();
 })();
+
+/* ── El tablero embebido dice cuánto mide; el marco se ajusta solo. ── */
+addEventListener('message', function (ev) {
+  if (ev.origin !== location.origin) return;                 // solo nuestro propio iframe
+  var d = ev.data;
+  if (!d || d.yodTablero !== 'alto') return;
+  var f = document.getElementById('board-frame');
+  var h = Number(d.alto);
+  if (f && h > 200 && h < 4000) f.style.height = h + 'px';
+});

@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.24.0/dist/tabler-icons.min.css">
-  <link rel="stylesheet" href="styles.css?v=0.3.6">
+  <link rel="stylesheet" href="styles.css?v=0.4.0">
 </head>
 <body>
   <div class="app-shell">
@@ -20,6 +20,7 @@
       </a>
       <nav class="side-nav">
         <a class="nav-item active" href="#inicio"><i class="ti ti-home-2"></i><span>Inicio</span></a>
+        <a class="nav-item" href="#tablero"><i class="ti ti-layout-dashboard"></i><span>El tablero</span></a>
         <p class="nav-section-label">Tableros</p>
         <div class="nav-modules" id="nav-modules"><span class="nav-loading"><i class="ti ti-loader-2 spin"></i> Cargando…</span></div>
         <a class="nav-item admin-only hidden" href="https://alexpueblag.github.io/potenciales-yod/accesos.html"><i class="ti ti-users"></i><span>Personas y accesos</span></a>
@@ -66,6 +67,17 @@
           <div><span>Módulos disponibles</span><strong id="module-count">—</strong></div>
           <div><span>Fuente</span><strong>Control Maestro</strong></div>
           <div><span>Acceso</span><strong id="access-status">Validando</strong></div>
+        </section>
+
+        <section class="section board-section" id="tablero" aria-labelledby="board-title">
+          <div class="section-head">
+            <div><p class="eyebrow">De un vistazo</p><h2 id="board-title">El tablero de la operación</h2></div>
+            <a class="section-link" href="../tablero.html" target="_blank" rel="noopener">Abrir en grande <i class="ti ti-arrow-up-right"></i></a>
+          </div>
+          <div class="board-frame">
+            <iframe id="board-frame" src="../tablero.html?embed=1" title="Tablero YOD OS · operación completa"></iframe>
+          </div>
+          <p class="board-foot">Cada canica es un cliente o un expediente real &mdash; p&iacute;cala para abrir su ficha. Los hex&aacute;gonos del marco son los KPIs: <b>verde</b> en l&iacute;nea, <b>&aacute;mbar</b> por conectar.</p>
         </section>
 
         <section class="section pulse-section hidden" id="pulso" aria-labelledby="pulse-title">

@@ -27,6 +27,14 @@
  #f .ac{margin-top:9px;padding-top:8px;border-top:1px solid #DDD3BC;
    font:700 11.5px/1.4 'Helvetica Neue';color:#2E2A22}
  #gate{position:fixed;inset:0;background:#F7F4EC;display:flex;align-items:center;justify-content:center;z-index:60}
+ /* embebido en YOD OS: sin lienzo propio, hereda el papel del portal */
+ html.embed, html.embed body{height:auto;display:block;background:transparent}
+ body.embed #gate{position:static;inset:auto;background:transparent;min-height:420px}
+ body.embed #gateCard{box-shadow:none;background:#FCF8EE}
+ body.embed #sw{padding:2px 4px 10px}
+ body.embed #w{padding:0;width:100%}
+ body.embed canvas{max-height:none;width:100%;height:auto}
+ body.embed #sw{padding:14px 6px 12px;justify-content:center;flex-wrap:wrap}
  #gate.off{display:none}
  #gateCard{width:min(380px,92vw);background:#FCF8EE;border:1.5px solid #8B7A57;border-radius:12px;
    padding:26px 26px 22px;box-shadow:0 18px 44px rgba(60,48,28,.25);text-align:center}
@@ -48,7 +56,7 @@
  #sw button.on{background:#2E2A22;border-color:#2E2A22;color:#F4EEDF}
  #sw i{color:#B0A48D;font-style:normal;font-weight:600;font-size:10.5px;margin-left:3px}
 </style>
-<div id="gate"><div id="gateCard">
+<div id="gate" class="gate"><div id="gateCard">
   <h1>YOD OS &middot; Tablero</h1>
   <p>El tablero de la operaci&oacute;n. Escribe la clave del portal.</p>
   <input id="gateClave" type="password" autocomplete="current-password" placeholder="clave">
@@ -63,6 +71,9 @@
 <script>
 (function(){
 "use strict";
+const EMBED=new URLSearchParams(location.search).has("embed");
+if(EMBED){ document.body.classList.add("embed");
+  document.documentElement.classList.add("embed"); }
 const CV=document.getElementById("c"), g=CV.getContext("2d");
 const W=1536,H=1056;
 
@@ -1388,6 +1399,12 @@ async function validar(k){
   if(!r.ok) throw r.error||"error";
   CLAVE_OK=k;
 }
+function avisarAlto(){
+  if(!EMBED || window.parent===window) return;
+  const h=Math.ceil(Math.max(document.body.scrollHeight,
+    document.documentElement.scrollHeight))+6;
+  try{ parent.postMessage({yodTablero:"alto", alto:h}, location.origin); }catch(e){}
+}
 function abrir(){
   GT.classList.add("off");
   document.getElementById("w").style.display="";
@@ -1399,6 +1416,8 @@ function abrir(){
   conectarCodes();
   conectarCRM();
   sondaFinance();
+  avisarAlto(); setTimeout(avisarAlto,400); setTimeout(avisarAlto,1600);
+  addEventListener("resize",avisarAlto);
 }
 async function entrar(){
   const v=document.getElementById("gateClave").value.trim();
@@ -1416,7 +1435,9 @@ if(CLV) validar(CLV).then(abrir).catch(e=>{
   if(e==="clave"){ localStorage.removeItem(LSK);
     document.getElementById("gateErr").textContent="La clave cambió"; }
   else document.getElementById("gateErr").textContent="Sin conexión con el Sheet";
+  avisarAlto();
 });
+avisarAlto(); setTimeout(avisarAlto,300);
 window.__HIT=HIT;
 })();
 </script>
