@@ -560,7 +560,9 @@ function placaCRM(){
   });
   txt(FIL.map(f=>f[0].toLowerCase()).join("  ·  "),x,py+ph+14,12,M.tinta2,600);
   quad(x-100,py+ph+23,10,9,M.rojo,"rgba(90,30,20,.5)",1);
-  txt(NBLQ+" se enfrían · $"+(VBLQ/1e6).toFixed(2)+"M en juego",x-84,py+ph+28,12.5,M.rojoP,800,"left");
+  const dinero = VBLQ>=1e6 ? "$"+(VBLQ/1e6).toFixed(2)+"M"
+               : (VBLQ>0 ? "$"+Math.round(VBLQ).toLocaleString("es-MX") : "nada");
+  txt(NBLQ+" se enfrían · "+dinero+" en juego",x-84,py+ph+28,12.5,M.rojoP,800,"left");
 }
 
 /* ── 1 · CUATRO SURCOS · la charola partida en cuatro carriles ── */
@@ -604,9 +606,9 @@ function crmAbaco(){
   const {x,y,w,h}=CRM, x0=x-w/2;
   const lx=x0+9, rx0=x0+94, rx1=x+w/2-14, S=rx1-rx0;
   // las bandas se ensanchan con su carga: el ancho ya es el KPI
-  const CNTa=[0,1,2,3].map(j=>Math.max(1,REP.reduce((a,f)=>a+f[j],0)));   // mínimo 1: banda visible
-  const SUM=CNTa.reduce((a,b)=>a+b,0);
-  const Bd=[0]; CNTa.forEach(c=>Bd.push(Bd[Bd.length-1]+c/SUM));
+  const CNTa=[0,1,2,3].map(j=>REP.reduce((a,f)=>a+f[j],0));
+  const SUM=Math.max(1,CNTa.reduce((a,b)=>a+b,0));
+  const Bd=[0]; CNTa.forEach(c=>Bd.push(Bd[Bd.length-1]+(0.55*c/SUM + 0.45/4)));
   bandeja();
   for(let j=1;j<4;j++){
     const gx=rx0+S*Bd[j];
@@ -1356,6 +1358,7 @@ async function conectarCRM(){
     ORIG.forEach((o,i)=>{ if(i!==1){ o.f=String(porEmb[i]); o.p=Math.min(o.h,porEmb[i]); } });
     setLeadsCRM(m);
     if(j.kpis && j.kpis.enJuego!=null) VBLQ=j.kpis.enJuego;   // criterio Sheetify
+    if(j.kpis && j.kpis.vanTarde!=null) NBLQ=j.kpis.vanTarde; // una sola cuenta, la del motor
     ARCD=(j.archivo||[]).map(r=>({...leadVivo(r), st:"gris", nodo:"ARC",
       motivo:r.motivo||"perdido",
       accion:r.motivo==="dormido"?("Dormido "+r.dias+" días · rescatable"):"Perdido · reactivable"}));
@@ -1365,8 +1368,9 @@ async function conectarCRM(){
     KPIHEX_TOP[2]={n:String(k.total??TOT), lbl:"LEADS EN CRM", c:"azul", st:"linea"};
     KPIHEX_TOP[3]={n:(k.vanTarde??NBLQ)+"/"+(k.total??TOT), lbl:"SE ENFRÍAN +30d",
       c:(k.vanTarde||0)>0?"rojo":"verde", st:"linea"};
-    KPIHEX_TOP[4]={n:"$"+((k.enJuego||0)/1e6).toFixed(1)+"M", lbl:"EN JUEGO",
-      c:"azul", st:"linea"};
+    KPIHEX_TOP[4]={n:(k.enJuego||0)>=1e6 ? "$"+(k.enJuego/1e6).toFixed(1)+"M"
+                     : ((k.enJuego||0)>0 ? "$"+Math.round(k.enJuego/1000)+"k" : "$0"),
+      lbl:"EN JUEGO", c:(k.enJuego||0)>0?"azul":"rojo", st:"linea"};
     KPIHEX_TOP[5]={n:String(k.dormidos??0), lbl:"DORMIDOS +90d",
       c:(k.dormidos||0)>0?"gris":"verde", st:"linea"};
     pintar();
