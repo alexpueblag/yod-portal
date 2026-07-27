@@ -290,11 +290,11 @@ function perfil(nodo,st){
 
 /* ═══ DATOS ═══ */
 const ORIG=[
- {x:190, k:"ADA", n:"A DE A",       f:"4/6",  h:6,  p:4, ic:"casa",    sub:"contratos · meta"},
+ {x:190, k:"ADA", n:"A DE A",       f:"—",  h:6,  p:0, ic:"casa",    sub:"contratos · meta"},
  {x:465, k:"PPP", n:"PPP",          f:"—",  h:8,  p:0, ic:"graf",    sub:"pagados · meta"},
- {x:740, k:"OBR", n:"OBRA",         f:"7/9",  h:9,  p:7, ic:"grua",    sub:"obra nueva · meta"},
- {x:1015,k:"LOT", n:"LOTES",        f:"7/10", h:10, p:7, ic:"mosaico", sub:"apartados · meta"},
- {x:1290,k:"CDS", n:"CODESARROLLO", f:"2/3",  h:3,  p:2, ic:"pieza",   sub:"alianzas · meta"}
+ {x:740, k:"OBR", n:"OBRA",         f:"—",  h:9,  p:0, ic:"grua",    sub:"obra nueva · meta"},
+ {x:1015,k:"LOT", n:"LOTES",        f:"—", h:10, p:0, ic:"mosaico", sub:"apartados · meta"},
+ {x:1290,k:"CDS", n:"CODESARROLLO", f:"—",  h:3,  p:0, ic:"pieza",   sub:"alianzas · meta"}
 ];
 const TY=126, PLY=200;                 // torres / placas
 const CRM={x:760,y:400,w:660,h:110};
@@ -468,8 +468,8 @@ function origenes(){
    ════════════════════════════════════════════════════════════════════════ */
 const FIL=[["CONTACTABLE",18],["CALIFICADO",34],["PROPUESTA",21],["NEGOCIACIÓN",11]];
 const EMB=[["ADA","A DE A"],["PPP","PPP"],["OBR","OBRA"],["LOT","LOTES"],["CDS","CODES."]];
-const REP=[[4,7,5,2],[6,12,8,4],[3,6,3,2],[4,7,4,2],[1,2,1,1]];   // embudo × filtro = 84
-const TOT=84;
+const REP=[[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]];   // SIN FUENTE: el Sheet CRM - YOD aún no expone la lista
+const TOT=REP.flat().reduce((a,b)=>a+b,0);
 const ACCF=["Marcar y confirmar datos","Calificar terreno y presupuesto",
             "Entregar la propuesta","Cerrar y firmar"];
 
@@ -519,6 +519,7 @@ function cuenta(x,y,k,dat){
 }
 function bandeja(){                        // la charola de siempre, intacta
   const {x,y,w,h}=CRM;
+  if(!TOT){ /* vacía: el letrero se pinta tras la charola, abajo */ }
   quad(x-w/2+5,y-h/2+6,w,h,"rgba(70,58,36,.26)");
   quad(x-w/2,y-h/2,w,h,M.resina,"rgba(20,40,66,.6)",2);
   quad(x-w/2,y-h/2,w,10,M.resinaL);
@@ -532,6 +533,15 @@ function bandeja(){                        // la charola de siempre, intacta
 
 function placaCRM(){
   const {x,y,h}=CRM, w=360, py=y+h/2+16, ph=64; tapa(x-w/2,py,w,ph);
+  if(!TOT){
+    quad(x-w/2+4,py+5,w,ph,"rgba(80,66,42,.22)");
+    quad(x-w/2,py,w,ph,M.hueso,"rgba(90,76,48,.45)",1.6);
+    quad(x-w/2,py,w,7,M.huesoS);
+    txt("CRM YOD",x,py+17,19,M.tinta,800);
+    txt("—",x,py+40,24,M.tinta,800);
+    txt("sin línea · conectar Sheet CRM - YOD",x,py+ph+14,12,M.tinta2,600);
+    return;
+  }
   quad(x-w/2+4,py+5,w,ph,"rgba(80,66,42,.22)");
   quad(x-w/2,py,w,ph,M.hueso,"rgba(90,76,48,.45)",1.6);
   quad(x-w/2,py,w,7,M.huesoS);
@@ -556,6 +566,7 @@ function crmSurcos(){
   bandeja();
   const {x,y,w,h}=CRM, x0=x-w/2, lw=w/4;
   FIL.forEach(([nom,tot],j)=>txt(nom,x0+lw*(j+0.5),y-h/2+5.5,9,"rgba(228,240,252,.9)",800));
+  if(!TOT) txt("aquí caerán los leads cuando el CRM esté en línea",x,y+6,11,"rgba(228,240,252,.55)",700);
   for(let j=1;j<4;j++){                              // el troquel
     const gx=x0+j*lw;
     quad(gx-3,y-h/2+10,6,h-10,"rgba(9,24,42,.9)");
@@ -889,8 +900,8 @@ function bordes(){
   // ARCHIVO · gaveta medio abierta
   quad(30,930,220,92,"#B49A6C","rgba(70,52,26,.6)",1.8);
   quad(38,938,204,74,"#8A6A38");
-  txt("ARCHIVO · 12 PAUSADOS",140,1042,12,M.tinta2,700);
-  for(let i=0;i<12;i++) canica(58+(i%6)*32, 958+((i/6)|0)*30,"gris",0,perfil("ARC","gris"));
+  txt("ARCHIVO · —",140,1042,12,M.tinta2,700);
+  for(let i=0;i<12;i++) hoyo(58+(i%6)*32, 958+((i/6)|0)*30);   // huecos: sin fuente, sin canicas
   // LEYENDA impresa
   const ly=696;
   tapa(30,ly-16,220,244);
@@ -911,15 +922,42 @@ function bordes(){
 }
 
 /* ═══ 10 · CANICAS DEL CICLO ═══ */
+// Cada canica del riel es un TRÁMITE REAL del board de Miramar. Nada inventado:
+// sin línea, solo se ven los hoyos.
+function fichaTramite(tr,nodo){
+  return { id:tr.tramite_id||"T—", nodo, st:nodo==="RET"?"rojo":"ambar",
+    tipo:(n=>n.length>42?n.slice(0,41).trim()+"…":n)(String(tr.nombre||"—")), zona:tr.autoridad||"—",
+    resp:tr.responsable_nombre||"—", dias:null, valor:null,
+    accion:(n=>n.length>110?n.slice(0,109).trim()+"…":n)(String(tr.decision||tr.por_que_importa||"—")) };
+}
 function canicasCiclo(){
   const TR=[0.600,0.626,0.652,0.678,0.812,0.838,0.864,0.890,0.916];
-  TR.forEach(t=>{ const [x,y]=anilloEje(t); hoyo(x,y); canica(x,y,"rojo",0,perfil("RET","rojo")); });
   const TS=[0.094,0.120,0.146,0.172,0.328,0.354,0.380,0.406];
-  TS.forEach((t,i)=>{ const [x,y]=anilloEje(t); hoyo(x,y);
-    if(i%4!==3 && t!==0.146) canica(x,y,"ambar",0,perfil("TRA","ambar")); });   // el .146 es de la ×13
-  const [cx,cy]=anilloEje(0.146);
-  canica(cx,cy,"ambar",13,{grupo:Array.from({length:13},()=>perfil("TRA","ambar")),
-    filtro:"EN VENTANILLA"});
+  TR.forEach(t=>hoyo(...anilloEje(t)));
+  TS.forEach(t=>hoyo(...anilloEje(t)));
+  if(!TRAD||!TRAD.rows) return;
+  const est=e=>String(e.estado||"").trim().toLowerCase();
+  const rojos=TRAD.rows.filter(t=>est(t)==="rojo");
+  const ambar=TRAD.rows.filter(t=>est(t)==="amarillo");
+  // rojos: los primeros sueltos; el resto, UNA cápsula ×N que abre la lista real
+  const nr=Math.min(TR.length-1,rojos.length);
+  for(let i=0;i<nr;i++){ const [x,y]=anilloEje(TR[i]);
+    canica(x,y,"rojo",0,fichaTramite(rojos[i],"RET")); }
+  if(rojos.length>nr){
+    const resto=rojos.slice(nr), [x,y]=anilloEje(TR[TR.length-1]);
+    canica(x,y,"rojo",resto.length,
+      {grupo:resto.map(t=>fichaTramite(t,"RET")), filtro:"REGRESA A CORREGIR"});
+  } else if(rojos.length===TR.length){ const [x,y]=anilloEje(TR[TR.length-1]);
+    canica(x,y,"rojo",0,fichaTramite(rojos[TR.length-1],"RET")); }
+  // ámbar (en curso): sueltos hasta llenar; el sobrante también se agrupa
+  const na=Math.min(TS.length-1,ambar.length);
+  for(let i=0;i<na;i++){ const [x,y]=anilloEje(TS[i]);
+    canica(x,y,"ambar",0,fichaTramite(ambar[i],"TRA")); }
+  if(ambar.length>na){
+    const resto=ambar.slice(na), [x,y]=anilloEje(TS[TS.length-1]);
+    canica(x,y,"ambar",resto.length,
+      {grupo:resto.map(t=>fichaTramite(t,"TRA")), filtro:"EN VENTANILLA"});
+  }
 }
 
 /* ═══ ANILLO DE HEXÁGONOS · el marco ES el tablero de KPIs ═══ */
@@ -927,11 +965,11 @@ const HEXCOL={verde:"#3FAE5E",ambar:"#E8A02B",rojo:"#C0453A",azul:"#2F5F92",gris
 // estado: "linea" (verde, alimentado) · "fuente" (ámbar, existe la fuente, falta conectar)
 //         · "tentativo" (gris, el dato es de relleno y no tiene fuente todavía)
 const KPIHEX_TOP=[
- {n:"4/6",  lbl:"CONTRATOS A DE A", c:"ambar", st:"fuente",    src:"Sheet CRM - YOD"},
+ {n:"—",    lbl:"CONTRATOS A DE A", c:"gris",  st:"tentativo", src:"Sheet CRM - YOD sin endpoint"},
  {n:"—",    lbl:"PPP PAGADOS",      c:"ambar", st:"fuente",    src:"GAS plan-potencial"},
- {n:"84",   lbl:"LEADS EN CRM",     c:"azul",  st:"tentativo", src:"—"},
- {n:"12",   lbl:"VAN TARDE",        c:"rojo",  st:"tentativo", src:"—"},
- {n:"$7.3M",lbl:"EN JUEGO TARDE",   c:"rojo",  st:"tentativo", src:"—"},
+ {n:"—",    lbl:"LEADS EN CRM",     c:"gris",  st:"tentativo", src:"—"},
+ {n:"—",    lbl:"VAN TARDE",        c:"gris",  st:"tentativo", src:"—"},
+ {n:"—",    lbl:"EN JUEGO TARDE",   c:"gris",  st:"tentativo", src:"—"},
  {n:"1",    lbl:"META CIERRES · MES",c:"verde",st:"fuente",    src:"definir dónde vive"},
  null, null];
 const KPIHEX_BOT=[
@@ -1039,12 +1077,12 @@ function fichaHTML(p,conVolver){
     (p.origen?'<tr><td class="k">Embudo</td><td>'+p.origen+'</td></tr>':'')+
     (p.filtro?'<tr><td class="k">Filtro</td><td>'+p.filtro+'</td></tr>':'')+
     '<tr><td class="k">Responsable</td><td>'+p.resp+'</td></tr>'+
-    '<tr><td class="k">Sin moverse</td><td>'+p.dias+' días</td></tr>'+
-    '<tr><td class="k">Valor est.</td><td>$'+p.valor.toLocaleString("es-MX")+'</td></tr></table>'+
+    (p.dias!=null?'<tr><td class="k">Sin moverse</td><td>'+p.dias+' días</td></tr>':'')+
+    (p.valor!=null?'<tr><td class="k">Valor est.</td><td>$'+p.valor.toLocaleString("es-MX")+'</td></tr>':'')+'</table>'+
     '<div class="ac">Próxima acción: '+p.accion+'</div>';
 }
 function listaHTML(p){
-  const orden=[...p.grupo].sort((a,b)=>b.dias-a.dias);          // los urgentes arriba
+  const orden=[...p.grupo].sort((a,b)=>(b.dias||0)-(a.dias||0));
   GSEL=orden;
   return '<div class="id">&times;'+p.grupo.length+' aquí'+(p.filtro?' · '+p.filtro:'')+'</div>'+
     '<div class="zo">elige el caso que quieres abrir</div>'+
@@ -1052,7 +1090,7 @@ function listaHTML(p){
       '<div class="it" data-i="'+i+'"><span class="dotl" style="background:'+
       (g.emb?COL[g.emb.toLowerCase()][0]:(CB[g.st]||"#9A968C"))+'"></span>'+
       '<span class="itid">'+g.id+'</span> '+g.tipo+
-      '<span class="itd'+(g.st==="rojo"?' r':'')+'">'+g.dias+'d</span></div>').join('')+'</div>';
+      '<span class="itd'+(g.st==="rojo"?' r':'')+'">'+(g.dias!=null?g.dias+'d':'')+'</span></div>').join('')+'</div>';
 }
 F.addEventListener("click",ev=>{
   const it=ev.target.closest(".it");
@@ -1170,7 +1208,7 @@ async function conectarMiramar(){
     const est=e=>String(e.estado||"").trim().toLowerCase();
     TRAD={ apr:tr.filter(t=>est(t)==="verde").length,
            blq:tr.filter(t=>est(t)==="rojo").length,
-           tot:tr.length };
+           tot:tr.length, rows:tr };
     const ap=lo.filter(l=>est(l)==="apartado").length;
     const POS=[4,11,7,14,1,9,16,3,12,5,0,8,15,2,10,6,13];
     APSET=new Set(POS.slice(0,Math.min(ap,POS.length)));
