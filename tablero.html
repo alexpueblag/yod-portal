@@ -282,22 +282,15 @@ function figura(x,y,c,dormida){
 const ETP={ADA:"Origen · A de A",PPP:"Origen · PPP",ABC:"Origen · ABC",OBR:"Origen · Obra",
   LOT:"Origen · Lotes",CDS:"Origen · CoDesarrollo",CRM:"CRM YOD",TRA:"Trámites",
   TAL:"Taller Aurum",RET:"Trámites → regresó al Taller",ARC:"Archivo"};
-const ZONAS=["Pitic","Bahía de Kino","Vado del Río","Las Quintas","Villa Satélite","Cerro de la Campana",
-  "Real del Arco","Miramar","Sahuaro","Palo Verde","La Cercada","Nuevo Hermosillo"];
-const TIPOS=["Terreno 300 m²","Casa habitación","Lote residencial","Terreno 1,200 m²",
-  "Ampliación","Local comercial","Cabaña","Macrolote","Casa en obra","Terreno esquina"];
-const RESP=["Alejandro","Sayri","Equipo YoD","Taller Aurum"];
-const ACC={ADA:"Primer contacto",PPP:"Agendar sesión de potencial",ABC:"Cerrar términos",
-  OBR:"Cotizar obra",LOT:"Confirmar apartado",CDS:"Preparar Plan de Potencial",
-  CRM:"Dar seguimiento a propuesta",TRA:"Esperando dictamen",TAL:"Corregir expediente",
-  RET:"Reingresar a ventanilla",ARC:"—"};
-let SEQ=0;
-function perfil(nodo,st){
-  SEQ++; const h=(SEQ*2654435761)>>>0;
-  const id="L-"+(h%65536).toString(16).toUpperCase().padStart(4,"0");
-  return {id, nodo, st, zona:ZONAS[h%12], tipo:TIPOS[(h>>>4)%10], resp:RESP[(h>>>8)%4],
-    dias:1+((h>>>12)%64), valor:(1+((h>>>16)%14))*75000, accion:ACC[nodo]||"—"};
-}
+
+
+
+
+/* Las canicas de las torres de origen representan un CONTEO real, pero no
+   tenemos el detalle de cada persona desde esa fuente. Antes se fabricaban zona,
+   tipo, responsable, dias y valor con una formula: se veian identicas a las
+   reales y habrian pasado por ciertas en cuanto hubiera el primer cliente.
+   Ahora la canica se dibuja sin ficha: se ve el conteo, no se inventa a nadie. */
 
 /* ═══ DATOS ═══ */
 const ORIG=[
@@ -464,7 +457,7 @@ function origenes(){
     for(let i=0;i<o.h;i++){
       const hx=o.x-bw/2+16+i*((bw-32)/Math.max(1,o.h-1));
       hoyo(hx,PLY-26);
-      if(i<o.p) canica(hx,PLY-26,"verde",0,perfil(o.k||"ADA","verde"));
+      if(i<o.p) canica(hx,PLY-26,"verde",0,null);   // conteo real, sin ficha inventada
     }
     placaKPI(o.x,PLY,180,o.n,o.f,o.sub,o.p/o.h,M.verde);
   });
@@ -482,19 +475,10 @@ const FIL=[["CONTACTABLE",18],["CALIFICADO",34],["PROPUESTA",21],["NEGOCIACIÓN"
 const EMB=[["ADA","A DE A"],["PPP","PPP"],["OBR","OBRA"],["LOT","LOTES"],["CDS","CODES."]];
 let REP=[[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0],[0,0,0,0]];     // lo llena conectarCRM() con leads reales
 let TOT=0;
-const ACCF=["Marcar y confirmar datos","Calificar terreno y presupuesto",
-            "Entregar la propuesta","Cerrar y firmar"];
 
-function leadCRM(i,j,m){
-  const h=((((i*7919)^(j*104729)^(m*2654435761))>>>0)*2246822519)>>>0, r=h%100;
-  const dias = r<58 ? 1+(h%7) : (r<84 ? 8+(h%13) : 22+(h%42));
-  return { id:"L-"+((h>>>3)%65536).toString(16).toUpperCase().padStart(4,"0"),
-    nodo:"CRM", st: dias>21?"rojo":(dias>7?"ambar":"azul"), dias,
-    zona:ZONAS[h%12], tipo:TIPOS[(h>>>4)%10],
-    resp:["Alejandro","Sayri","Equipo YoD"][(h>>>20)%3],   // el Taller no persigue leads
-    valor:(1+((h>>>16)%14))*75000, ph:((h>>>7)%997)/997,
-    emb:EMB[i][0], origen:EMB[i][1], filtro:FIL[j][0], accion:ACCF[j] };
-}
+/* Aqui vivia leadCRM(): fabricaba leads con una formula. Nadie la llamaba
+   —los reales entran por setLeadsCRM(matriz)— y su parecido con los buenos la
+   hacia peligrosa. Se quita para que no haya dos maneras de nacer un lead. */
 // la matriz embudo×filtro la llena el CRM real; vacía = charola sin línea
 let LEADS=REP.map(f=>f.map(()=>[])), BLQ=[0,0,0,0], NBLQ=0, VBLQ=0;
 function setLeadsCRM(matriz){
