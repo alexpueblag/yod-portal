@@ -980,14 +980,14 @@ const KPIHEX_TOP=[
  {n:"—",    lbl:"LEADS EN CRM",     c:"gris",  st:"tentativo", src:"—"},
  {n:"—",    lbl:"VAN TARDE",        c:"gris",  st:"tentativo", src:"—"},
  {n:"—",    lbl:"EN JUEGO TARDE",   c:"gris",  st:"tentativo", src:"—"},
- {n:"1",    lbl:"META CIERRES · MES",c:"verde",st:"fuente",    src:"definir dónde vive"},
+ {n:"—",    lbl:"PERDIDOS",         c:"gris",  st:"fuente",    src:"CRM · etapa Perdido"},
  null, null];
 const KPIHEX_BOT=[
  {n:"—",    lbl:"TRÁMITES MIRAMAR", c:"ambar", st:"fuente",    src:"board Real Miramar"},
  {n:"—",    lbl:"BLOQUEADOS",       c:"rojo",  st:"fuente",    src:"board Real Miramar"},
  {n:"—",    lbl:"TALLER CERRADAS",  c:"ambar", st:"fuente",    src:"board-aurum (operación)"},
- {n:"81%",  lbl:"OBRA ALYSA",       c:"verde", st:"fuente",    src:"TRACK_ALYSA"},
- {n:"31%",  lbl:"COBRADO ALYSA",    c:"rojo",  st:"fuente",    src:"flujo Casa Alysa"},
+ {n:"—",    lbl:"HITOS ALYSA",      c:"ambar", st:"fuente",    src:"track-alysa"},
+ {n:"—",    lbl:"COBRADO CODES",    c:"ambar", st:"fuente",    src:"portal Co-desarrolladores"},
  {n:"—",    lbl:"APARTADOS",        c:"ambar", st:"fuente",    src:"board Real Miramar"},
  {n:"—",    lbl:"CON FOLIO CODES",  c:"ambar", st:"fuente",    src:"portal Co-desarrolladores"}, null];
 function hexTile(cx,cy,k){
@@ -1242,6 +1242,8 @@ async function conectarTracks(){
     const tot=r.items.length,
           hechos=r.items.filter(i=>String(i.estado||"").toLowerCase()==="hecho").length;
     PROJ[idx].f=hechos+"/"+tot; PROJ[idx].p=tot?hechos/tot:0;
+    if(track==="alysa") KPIHEX_BOT[3]={n:Math.round(hechos/Math.max(1,tot)*100)+"%",
+      lbl:"HITOS ALYSA", c:hechos/Math.max(1,tot)>=.7?"verde":"ambar", st:"linea"};
     return hechos+"/"+tot;
   };
   try{
@@ -1284,11 +1286,18 @@ async function conectarTaller(){
 /* ═══ TRAMO CODES · $ con folio del portal Co-desarrolladores ═══ */
 const CODES_GAS="https://script.google.com/macros/s/AKfycbxoW0hz0nInT208B8L_WNEpYNW0iPTMNWosl3m3TG9VO6WVRVqh90xKLLSLRQCTEB9O3A/exec";
 function sumaInversiones(data){
-  const inv=(data&&(data.Inversiones||data.inversiones))||[];
   const n=v=>{const x=Number(String(v==null?"":v).replace(/[^0-9.-]/g,""));return isFinite(x)?x:0;};
+  const inv=(data&&(data.Inversiones||data.inversiones))||[];
   const act=inv.filter(r=>r&&String(r.folio||"").trim()&&
     String(r.estado||"").toLowerCase()!=="cancelada");
-  return { total:act.reduce((a,r)=>a+n(r.montoTotal),0), n:act.length };
+  const total=act.reduce((a,r)=>a+n(r.montoTotal),0);
+  // cobrado real = aportaciones RECIBIDAS contra lo comprometido
+  const ap=(data&&(data.Aportaciones||data.aportaciones))||[];
+  const folios=new Set(act.map(r=>String(r.folio).trim()));
+  const recibido=ap.filter(a=>a&&folios.has(String(a.folio||"").trim())&&
+      (a.fechaRecibida||String(a.estatus||a.estado||"").toLowerCase()==="recibida"))
+    .reduce((a,r)=>a+n(r.monto),0);
+  return { total, n:act.length, recibido, pct: total? recibido/total : null };
 }
 async function conectarCodes(){
   let res=null, via="live";
@@ -1308,6 +1317,8 @@ async function conectarCodes(){
   if(!res||!res.n) return;
   CODM=res.total;
   KPIHEX_BOT[6]={n:"$"+(res.total/1e6).toFixed(1)+"M", lbl:"CON FOLIO CODES", c:"verde", st:"linea"};
+  if(res.pct!=null) KPIHEX_BOT[4]={n:Math.round(res.pct*100)+"%", lbl:"COBRADO CODES",
+    c:res.pct>=.5?"verde":"rojo", st:"linea"};
   pintar();
   console.log("✓ Codes en línea ("+via+") · $"+(res.total/1e6).toFixed(1)+"M en "+res.n+" folios");
 }
@@ -1347,6 +1358,8 @@ async function conectarCRM(){
       c:(k.vanTarde||0)>0?"rojo":"verde", st:"linea"};
     KPIHEX_TOP[4]={n:"$"+((k.enJuego||0)/1e6).toFixed(1)+"M", lbl:"EN JUEGO",
       c:"azul", st:"linea"};
+    KPIHEX_TOP[5]={n:String(k.perdidos??0), lbl:"PERDIDOS",
+      c:(k.perdidos||0)>0?"rojo":"verde", st:"linea"};
     pintar();
     console.log("✓ CRM en línea · "+k.total+" leads · "+k.vanTarde+" van tarde · $"+
       ((k.enJuego||0)/1e6).toFixed(2)+"M en juego · "+k.contratosADA+" contratos A de A");
