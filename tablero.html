@@ -565,7 +565,7 @@ function placaCRM(){
   });
   txt(FIL.map(f=>f[0].toLowerCase()).join("  ·  "),x,py+ph+14,12,M.tinta2,600);
   quad(x-100,py+ph+23,10,9,M.rojo,"rgba(90,30,20,.5)",1);
-  txt(NBLQ+" van tarde · $"+(VBLQ/1e6).toFixed(1)+"M en juego",x-84,py+ph+28,12.5,M.rojoP,800,"left");
+  txt(NBLQ+" van tarde · $"+(VBLQ/1e6).toFixed(2)+"M en juego",x-84,py+ph+28,12.5,M.rojoP,800,"left");
 }
 
 /* ── 1 · CUATRO SURCOS · la charola partida en cuatro carriles ── */
@@ -1349,12 +1349,13 @@ async function conectarCRM(){
       m[i][f].push(leadVivo(r));
     });
     setLeadsCRM(m);
+    if(j.kpis && j.kpis.enJuego!=null) VBLQ=j.kpis.enJuego;   // criterio Sheetify
     ARCD=(j.archivo||[]).map(r=>({...leadVivo(r), st:"gris", nodo:"ARC", accion:"Reactivable"}));
     const k=j.kpis||{};
     KPIHEX_TOP[0]={n:String(k.contratosADA??0), lbl:"CONTRATOS A DE A",
       c:(k.contratosADA||0)>0?"verde":"rojo", st:"linea"};
     KPIHEX_TOP[2]={n:String(k.total??TOT), lbl:"LEADS EN CRM", c:"azul", st:"linea"};
-    KPIHEX_TOP[3]={n:String(k.vanTarde??NBLQ), lbl:"VAN TARDE",
+    KPIHEX_TOP[3]={n:(k.vanTarde??NBLQ)+"/"+(k.total??TOT), lbl:"VAN TARDE",
       c:(k.vanTarde||0)>0?"rojo":"verde", st:"linea"};
     KPIHEX_TOP[4]={n:"$"+((k.enJuego||0)/1e6).toFixed(1)+"M", lbl:"EN JUEGO",
       c:"azul", st:"linea"};
