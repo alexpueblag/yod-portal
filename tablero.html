@@ -499,7 +499,7 @@ const FOCOS=[];
 function prender(x,y,k,dias,ph){
   const [px,py]=P(x,y);
   FOCOS.push({px, py, r:RM*sx(y), c:COL[k][1], dias,
-              per: 5.0 - Math.min(1,(dias-22)/23)*3.0,    // 5 s recién → 2 s por archivarse
+              per: 5.0 - Math.min(1,(dias-31)/59)*3.0,    // 5 s al enfriarse → 2 s al borde del archivo
               ph});
 }
 function cantoPlano(){}
@@ -560,7 +560,7 @@ function placaCRM(){
   });
   txt(FIL.map(f=>f[0].toLowerCase()).join("  ·  "),x,py+ph+14,12,M.tinta2,600);
   quad(x-100,py+ph+23,10,9,M.rojo,"rgba(90,30,20,.5)",1);
-  txt(NBLQ+" van tarde · $"+(VBLQ/1e6).toFixed(2)+"M en juego",x-84,py+ph+28,12.5,M.rojoP,800,"left");
+  txt(NBLQ+" se enfrían · $"+(VBLQ/1e6).toFixed(2)+"M en juego",x-84,py+ph+28,12.5,M.rojoP,800,"left");
 }
 
 /* ── 1 · CUATRO SURCOS · la charola partida en cuatro carriles ── */
@@ -904,9 +904,14 @@ function bordes(){
   // ARCHIVO · gaveta medio abierta
   quad(30,930,220,92,"#B49A6C","rgba(70,52,26,.6)",1.8);
   quad(38,938,204,74,"#8A6A38");
-  txt(ARCD?("ARCHIVO · "+ARCD.length+" PERDIDOS"):"ARCHIVO · —",140,1042,12,M.tinta2,700);
+  txt(ARCD?("ARCHIVO · "+ARCD.length+" ("+ARCD.filter(a=>a.motivo==="dormido").length+
+    " dormidos)"):"ARCHIVO · —",140,1042,11,M.tinta2,700);
   for(let i=0;i<12;i++){ const hx=58+(i%6)*32, hy=958+((i/6)|0)*30; hoyo(hx,hy);
-    if(ARCD&&ARCD[i]) canica(hx,hy,"gris",0,ARCD[i]); }
+    if(!ARCD||!ARCD[i]) continue;
+    if(i<11) canica(hx,hy,"gris",0,ARCD[i]);
+    else { const resto=ARCD.slice(11);          // no caben: la ley ×N los agrupa
+      canica(hx,hy,"gris",resto.length,{grupo:resto, filtro:"ARCHIVO"}); }
+  }
   // LEYENDA impresa
   const ly=696;
   tapa(30,ly-16,220,244);
@@ -921,8 +926,8 @@ function bordes(){
   ORIG.forEach((o,i)=>{ const x=96+i*22; canica(x,ly+155,o.k.toLowerCase()); });
   txt("el color = su embudo",140,ly+171,10,M.tinta2,700);
   canica(62,ly+196,"ppp"); prender(62,ly+196,"ppp",30,0.15);
-  txt("parpadea = va tarde",92,ly+189,10,M.tinta2,700,"left");
-  txt("5 s al entrar · 2 s por archivarse",92,ly+202,9.5,M.tinta,700,"left");
+  txt("parpadea = se enfría",92,ly+189,10,M.tinta2,700,"left");
+  txt("5 s a los 30 d · 2 s a los 90 d",92,ly+202,9.5,M.tinta,700,"left");
   txt("un anillo = acaba de entrar",92,ly+214,9.5,M.tinta2,700,"left");
 }
 
@@ -985,17 +990,19 @@ const KPIHEX_BOT=[
  {n:"—",    lbl:"COBRADO CODES",    c:"ambar", st:"fuente",    src:"portal Co-desarrolladores"},
  {n:"—",    lbl:"APARTADOS",        c:"ambar", st:"fuente",    src:"board Real Miramar"},
  {n:"—",    lbl:"CON FOLIO CODES",  c:"ambar", st:"fuente",    src:"portal Co-desarrolladores"}, null];
-function hexTile(cx,cy,k){
+function hexTile(cx,cy,k,num){
   const r=27;
   g.save(); g.translate(cx,cy);
-  if(!k){                                       // slot LIBRE: troquel punteado
-    g.setLineDash([4,4]); g.strokeStyle="rgba(107,97,81,.5)"; g.lineWidth=1.4;
+  if(!k){                       // hueco numerado: se pide por su número, sin relleno
+    g.setLineDash([4,4]); g.strokeStyle="rgba(107,97,81,.45)"; g.lineWidth=1.4;
     g.beginPath();
     for(let i=0;i<6;i++){ const a=Math.PI/3*i+Math.PI/6; g.lineTo(Math.cos(a)*r,Math.sin(a)*r); }
     g.closePath(); g.stroke(); g.setLineDash([]);
-    g.fillStyle="rgba(107,97,81,.55)"; g.textAlign="center"; g.textBaseline="middle";
-    g.font="700 8.5px 'Helvetica Neue',Arial,sans-serif";
-    g.fillText("SLOT",0,-4); g.fillText("LIBRE",0,6);
+    g.fillStyle="rgba(107,97,81,.5)"; g.textAlign="center"; g.textBaseline="middle";
+    g.font="800 19px 'Helvetica Neue',Arial,sans-serif";
+    g.fillText("#"+num,0,1);
+    g.fillStyle="rgba(107,97,81,.42)"; g.font="700 8px 'Helvetica Neue',Arial,sans-serif";
+    g.fillText("LIBRE",0,r+13);
     g.restore(); return;
   }
   const col=HEXCOL[k.c];
@@ -1019,13 +1026,15 @@ function hexTile(cx,cy,k){
   g.beginPath(); g.arc(r*0.44,r*0.46,3.3,0,7);
   g.fillStyle=dc; g.fill();
   g.strokeStyle="rgba(46,36,18,.5)"; g.lineWidth=1; g.stroke();
+  g.fillStyle="rgba(70,58,36,.5)"; g.font="800 8px 'Helvetica Neue',Arial,sans-serif";
+  g.textAlign="left"; g.fillText("#"+num,-r+4,-r+11); g.textAlign="center";
   g.fillStyle="#6B6151"; g.font="800 8.5px 'Helvetica Neue',Arial,sans-serif";
   g.fillText(k.lbl,0,r+15);
   g.restore();
 }
-function hexKPIs(){
-  KPIHEX_TOP.forEach((k,i)=>hexTile(200+i*(1136/7),56,k));
-  KPIHEX_BOT.forEach((k,i)=>hexTile(200+i*(1136/7),970,k));
+function hexKPIs(){          // #1..#8 arriba · #9..#16 abajo
+  KPIHEX_TOP.forEach((k,i)=>hexTile(200+i*(1136/7),56,k,i+1));
+  KPIHEX_BOT.forEach((k,i)=>hexTile(200+i*(1136/7),970,k,i+9));
 }
 /* ═══ EL MAR · el tablero flota, estilo isla ═══ */
 function mar(){
@@ -1324,7 +1333,7 @@ function leadVivo(r){
   const dias=r.dias==null?0:r.dias;
   const h=[...String(r.id)].reduce((a,c)=>(a*31+c.charCodeAt(0))>>>0,7);
   return { id:r.id, nodo:"CRM",
-    st: r.dias==null ? "azul" : (dias>21?"rojo":(dias>7?"ambar":"azul")),
+    st: r.dias==null ? "azul" : (dias>30?"rojo":(dias>15?"ambar":"azul")),
     dias:r.dias, zona:r.origen||"—", tipo:r.proyecto||r.nombre||"—",
     resp:r.resp||"—", valor:r.valor||null, ph:(h%997)/997,
     emb:r.emb, origen:{ADA:"A DE A",PPP:"PPP",OBR:"OBRA",LOT:"LOTES",CDS:"CODES."}[r.emb]||r.emb,
@@ -1337,25 +1346,29 @@ async function conectarCRM(){
       "&t="+Date.now(),{cache:"no-store"});
     const j=await r.json(); if(!j.ok||!Array.isArray(j.leads)) throw j&&j.error||0;
     const EI={ADA:0,PPP:1,OBR:2,LOT:3,CDS:4}, FI={"CONTACTABLE":0,"CALIFICADO":1,"PROPUESTA":2,"NEGOCIACIÓN":3};
+    const porEmb=[0,0,0,0,0];
     const m=[0,1,2,3,4].map(()=> [ [],[],[],[] ]);
     j.leads.forEach(r=>{
       const i=EI[r.emb]??0, f=FI[r.filtro];
       if(f==null) return;
-      m[i][f].push(leadVivo(r));
+      m[i][f].push(leadVivo(r)); porEmb[i]++;
     });
+    ORIG.forEach((o,i)=>{ if(i!==1){ o.f=String(porEmb[i]); o.p=Math.min(o.h,porEmb[i]); } });
     setLeadsCRM(m);
     if(j.kpis && j.kpis.enJuego!=null) VBLQ=j.kpis.enJuego;   // criterio Sheetify
-    ARCD=(j.archivo||[]).map(r=>({...leadVivo(r), st:"gris", nodo:"ARC", accion:"Reactivable"}));
+    ARCD=(j.archivo||[]).map(r=>({...leadVivo(r), st:"gris", nodo:"ARC",
+      motivo:r.motivo||"perdido",
+      accion:r.motivo==="dormido"?("Dormido "+r.dias+" días · rescatable"):"Perdido · reactivable"}));
     const k=j.kpis||{};
     KPIHEX_TOP[0]={n:String(k.contratosADA??0), lbl:"CONTRATOS A DE A",
       c:(k.contratosADA||0)>0?"verde":"rojo", st:"linea"};
     KPIHEX_TOP[2]={n:String(k.total??TOT), lbl:"LEADS EN CRM", c:"azul", st:"linea"};
-    KPIHEX_TOP[3]={n:(k.vanTarde??NBLQ)+"/"+(k.total??TOT), lbl:"VAN TARDE",
+    KPIHEX_TOP[3]={n:(k.vanTarde??NBLQ)+"/"+(k.total??TOT), lbl:"SE ENFRÍAN +30d",
       c:(k.vanTarde||0)>0?"rojo":"verde", st:"linea"};
     KPIHEX_TOP[4]={n:"$"+((k.enJuego||0)/1e6).toFixed(1)+"M", lbl:"EN JUEGO",
       c:"azul", st:"linea"};
-    KPIHEX_TOP[5]={n:String(k.perdidos??0), lbl:"PERDIDOS",
-      c:(k.perdidos||0)>0?"rojo":"verde", st:"linea"};
+    KPIHEX_TOP[5]={n:String(k.dormidos??0), lbl:"DORMIDOS +90d",
+      c:(k.dormidos||0)>0?"gris":"verde", st:"linea"};
     pintar();
     console.log("✓ CRM en línea · "+k.total+" leads · "+k.vanTarde+" van tarde · $"+
       ((k.enJuego||0)/1e6).toFixed(2)+"M en juego · "+k.contratosADA+" contratos A de A");
