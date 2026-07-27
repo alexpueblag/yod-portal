@@ -1313,7 +1313,7 @@ async function conectarCodes(){
 }
 
 /* ═══ TRAMO CRM · los DOS CRMs, cada quien su parte (decisión 27-jul) ═══ */
-const CRM_GAS="";   // ← pega aquí la URL /exec del endpoint del CRM (yod-crm-endpoint)
+const CRM_GAS="https://script.google.com/macros/s/AKfycby5Nhozhfx6tTLw6f4w14U3fAx4y-bF2cO4aeIApaOQxgXsvonk8ZbTw2VEUnWGTLe8lw/exec";
 function leadVivo(r){
   const dias=r.dias==null?0:r.dias;
   const h=[...String(r.id)].reduce((a,c)=>(a*31+c.charCodeAt(0))>>>0,7);
