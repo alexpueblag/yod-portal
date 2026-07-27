@@ -6,7 +6,17 @@
  #w{position:relative} canvas{display:block;max-width:100vw;max-height:100vh}
  #luz{position:absolute;left:0;bottom:0;width:100%;pointer-events:none;z-index:2}
  #f{position:absolute;display:none;width:236px;background:#FCF8EE;border:1.5px solid #8B7A57;
-   border-radius:9px;box-shadow:0 14px 34px rgba(60,48,28,.34);padding:13px 15px;pointer-events:none;z-index:9}
+   border-radius:9px;box-shadow:0 14px 34px rgba(60,48,28,.34);padding:13px 15px;z-index:9}
+ #f .ls{max-height:196px;overflow:auto;margin-top:9px}
+ #f .it{display:flex;gap:7px;align-items:center;padding:5px 7px;border-radius:6px;cursor:pointer;
+   font:600 11.5px/1.4 'Helvetica Neue';color:#4A4438}
+ #f .it:hover{background:#F0E8D6}
+ #f .itid{font-weight:800;color:#2E2A22}
+ #f .itd{margin-left:auto;font-weight:800;color:#8A8072}
+ #f .itd.r{color:#a94438}
+ #f .dotl{width:9px;height:9px;border-radius:50%;flex:0 0 auto}
+ #f .volver{cursor:pointer;font:700 11px 'Helvetica Neue';color:#8A8072;margin-bottom:7px}
+ #f .volver:hover{color:#2E2A22}
  #f .id{font:800 15px/1 'Helvetica Neue';color:#2E2A22;letter-spacing:.4px}
  #f .zo{font:700 12px/1.5 'Helvetica Neue';color:#6B6151;margin-top:3px}
  #f .et{display:inline-block;margin-top:9px;padding:3px 8px;border-radius:20px;
@@ -48,7 +58,7 @@
 <div id="w" style="display:none"><div id="sw"><b>CRM</b>
  <button data-v="surcos">1 &middot; Cuatro surcos</button>
  <button data-v="abaco">2 &middot; El &aacute;baco</button>
- <i>hex&aacute;gonos: &#9679; verde en l&iacute;nea &middot; &#9679; &aacute;mbar fuente lista &middot; &#9679; gris tentativo</i></div>
+ <i>hex&aacute;gonos: &#9679; en l&iacute;nea &middot; &#9679; fuente lista &middot; &#9679; tentativo &nbsp;&nbsp; &times;N = varios en un punto: p&iacute;cala y elige</i></div>
 <canvas id="c" width="1536" height="1056"></canvas><canvas id="luz" width="1536" height="1056"></canvas><div id="f"></div></div>
 <script>
 (function(){
@@ -547,19 +557,28 @@ function crmSurcos(){
     quad(gx-3,y-h/2+10,6,h-10,"rgba(9,24,42,.9)");
     quad(gx+1.4,y-h/2+10,1.8,h-10,"rgba(150,185,215,.26)");
   }
-  const cols=7, pas=(lw-32)/(cols-1), fy=y+h/2-13, ph=18, mont=[];
+  // Ley del spec: si no caben, la cima del montón se vuelve UNA canica ×N.
+  // Picarla abre la lista de casos para elegir. Así caben los que sean.
+  const cols=7, pas=(lw-32)/(cols-1), fy=y+h/2-13, ph=18, CAPL=21, mont=[];
   FIL.forEach((f,j)=>{
-    let k=0;
-    EMB.forEach((e,i)=>{                             // se llena DESDE ABAJO, por embudo:
-      for(let n=0;n<REP[i][j];n++,k++){              // el montón queda estratificado por color
-        mont.push([x0+lw*j+16+(k%cols)*pas, fy-((k/cols)|0)*ph,
-                   e[0].toLowerCase(), LEADS[i][j][n]]);
-      }
-    });
+    const fila=[];
+    EMB.forEach((e,i)=>LEADS[i][j].forEach(L=>fila.push([e[0].toLowerCase(),L])));
+    const many=fila.length>CAPL;
+    const sueltas=many?fila.slice(0,CAPL-1):fila, resto=many?fila.slice(CAPL-1):[];
+    sueltas.forEach(([k,L],m)=>mont.push([x0+lw*j+16+(m%cols)*pas, fy-((m/cols)|0)*ph, k, L, 0]));
+    if(many){
+      const m=CAPL-1, cnt={};
+      resto.forEach(([k])=>cnt[k]=(cnt[k]||0)+1);
+      const kc=Object.keys(cnt).sort((a,b)=>cnt[b]-cnt[a])[0];   // el color que domina el grupo
+      mont.push([x0+lw*j+16+(m%cols)*pas, fy-((m/cols)|0)*ph, kc,
+        {grupo:resto.map(r=>r[1]), filtro:FIL[j][0]}, resto.length]);
+    }
   });
   mont.sort((a,b)=>a[1]-b[1]);                       // del fondo al jugador
-  mont.forEach(([cx,cy,k,L])=>{ canica(cx,cy,k,0,L);
-    if(L.st==="rojo") prender(cx,cy,k,L.dias,L.ph); });
+  mont.forEach(([cx,cy,k,L,nn])=>{ canica(cx,cy,k,nn,L);
+    if(nn){ const tarde=L.grupo.filter(g=>g.st==="rojo");
+      if(tarde.length) prender(cx,cy,k,Math.max(...tarde.map(g=>g.dias)),0.31); }
+    else if(L.st==="rojo") prender(cx,cy,k,L.dias,L.ph); });
   placaCRM();
 }
 
@@ -598,11 +617,19 @@ function crmAbaco(){
     FIL.forEach((f,j)=>{                             // las cuentas de ese embudo en ese filtro
       const n=REP[i][j]; if(!n) return;
       const a=rx0+S*Bd[j]+11, b=rx0+S*Bd[j+1]-11;
-      const p=Math.min(21,(b-a)/Math.max(1,n-1)), c0=(a+b)/2-p*(n-1)/2;
-      for(let m=0;m<n;m++){
+      const cap=Math.max(2,Math.floor((b-a)/14)+1);  // cuántas caben SIN encimarse feo
+      const ns=n<=cap?n:cap-1;                       // las sueltas; el resto se agrupa ×N
+      const p=Math.min(21,(b-a)/Math.max(1,ns-(n<=cap?1:0))), c0=n<=cap?(a+b)/2-p*(n-1)/2:a;
+      for(let m=0;m<ns;m++){
         const cx=c0+m*p, L=LEADS[i][j][m];
         cuenta(cx,yr,k,L);
         if(L.st==="rojo") prender(cx,yr,k,L.dias,L.ph);
+      }
+      if(n>cap){
+        const resto=LEADS[i][j].slice(ns);
+        canica(b,yr,k,resto.length,{grupo:resto, filtro:FIL[j][0]});
+        const tarde=resto.filter(g=>g.st==="rojo");
+        if(tarde.length) prender(b,yr,k,Math.max(...tarde.map(g=>g.dias)),0.31);
       }
     });
   });
@@ -877,8 +904,11 @@ function canicasCiclo(){
   const TR=[0.600,0.626,0.652,0.678,0.812,0.838,0.864,0.890,0.916];
   TR.forEach(t=>{ const [x,y]=anilloEje(t); hoyo(x,y); canica(x,y,"rojo",0,perfil("RET","rojo")); });
   const TS=[0.094,0.120,0.146,0.172,0.328,0.354,0.380,0.406];
-  TS.forEach((t,i)=>{ const [x,y]=anilloEje(t); hoyo(x,y); if(i%4!==3) canica(x,y,"ambar",0,perfil("TRA","ambar")); });
-  const [cx,cy]=anilloEje(0.146); canica(cx,cy,"ambar",13,perfil("TRA","ambar"));
+  TS.forEach((t,i)=>{ const [x,y]=anilloEje(t); hoyo(x,y);
+    if(i%4!==3 && t!==0.146) canica(x,y,"ambar",0,perfil("TRA","ambar")); });   // el .146 es de la ×13
+  const [cx,cy]=anilloEje(0.146);
+  canica(cx,cy,"ambar",13,{grupo:Array.from({length:13},()=>perfil("TRA","ambar")),
+    filtro:"EN VENTANILLA"});
 }
 
 /* ═══ ANILLO DE HEXÁGONOS · el marco ES el tablero de KPIs ═══ */
@@ -988,6 +1018,37 @@ function pintar(){
 const CB={azul:"#2E7FD4",verde:"#3FAE5E",ambar:"#E8A02B",rojo:"#D93A34",gris:"#9A968C"};
 const CW={azul:"En proceso",verde:"Listo",ambar:"Pendiente",rojo:"Bloqueo",gris:"Pausado"};
 const F=document.getElementById("f");
+let GSEL=null;
+function fichaHTML(p,conVolver){
+  return (conVolver?'<div class="volver">&larr; volver a la lista</div>':'')+
+    '<div class="id">'+p.id+'</div>'+
+    '<div class="zo">'+p.tipo+'  ·  '+p.zona+'</div>'+
+    '<span class="et" style="background:'+CB[p.st]+'">'+CW[p.st]+'</span>'+
+    '<table><tr><td class="k">Etapa</td><td>'+ETP[p.nodo]+'</td></tr>'+
+    (p.origen?'<tr><td class="k">Embudo</td><td>'+p.origen+'</td></tr>':'')+
+    (p.filtro?'<tr><td class="k">Filtro</td><td>'+p.filtro+'</td></tr>':'')+
+    '<tr><td class="k">Responsable</td><td>'+p.resp+'</td></tr>'+
+    '<tr><td class="k">Sin moverse</td><td>'+p.dias+' días</td></tr>'+
+    '<tr><td class="k">Valor est.</td><td>$'+p.valor.toLocaleString("es-MX")+'</td></tr></table>'+
+    '<div class="ac">Próxima acción: '+p.accion+'</div>';
+}
+function listaHTML(p){
+  const orden=[...p.grupo].sort((a,b)=>b.dias-a.dias);          // los urgentes arriba
+  GSEL=orden;
+  return '<div class="id">&times;'+p.grupo.length+' aquí'+(p.filtro?' · '+p.filtro:'')+'</div>'+
+    '<div class="zo">elige el caso que quieres abrir</div>'+
+    '<div class="ls">'+orden.map((g,i)=>
+      '<div class="it" data-i="'+i+'"><span class="dotl" style="background:'+
+      (g.emb?COL[g.emb.toLowerCase()][0]:(CB[g.st]||"#9A968C"))+'"></span>'+
+      '<span class="itid">'+g.id+'</span> '+g.tipo+
+      '<span class="itd'+(g.st==="rojo"?' r':'')+'">'+g.dias+'d</span></div>').join('')+'</div>';
+}
+F.addEventListener("click",ev=>{
+  const it=ev.target.closest(".it");
+  if(it && GSEL){ F.innerHTML=fichaHTML(GSEL[+it.dataset.i],true); return; }
+  if(ev.target.closest(".volver") && GSEL){
+    F.innerHTML=listaHTML({grupo:GSEL, filtro:GSEL[0]&&GSEL[0].filtro}); }
+});
 let HOVER=null;
 CV.addEventListener("mousemove",ev=>{
   const b=CV.getBoundingClientRect(), k=CV.width/b.width;
@@ -1006,16 +1067,8 @@ CV.addEventListener("click",ev=>{
     if(d<h.r*1.5 && d<dm){dm=d;mejor=h;} });
   if(!mejor||!mejor.d){ F.style.display="none"; return; }
   const p=mejor.d;
-  F.innerHTML='<div class="id">'+p.id+(mejor.n?'  <span style="color:#8A8072">+'+(mejor.n-1)+' más aquí</span>':'')+'</div>'+
-    '<div class="zo">'+p.tipo+'  ·  '+p.zona+'</div>'+
-    '<span class="et" style="background:'+CB[p.st]+'">'+CW[p.st]+'</span>'+
-    '<table><tr><td class="k">Etapa</td><td>'+ETP[p.nodo]+'</td></tr>'+
-    (p.origen?'<tr><td class="k">Embudo</td><td>'+p.origen+'</td></tr>':'')+
-    (p.filtro?'<tr><td class="k">Filtro</td><td>'+p.filtro+'</td></tr>':'')+
-    '<tr><td class="k">Responsable</td><td>'+p.resp+'</td></tr>'+
-    '<tr><td class="k">Sin moverse</td><td>'+p.dias+' días</td></tr>'+
-    '<tr><td class="k">Valor est.</td><td>$'+p.valor.toLocaleString("es-MX")+'</td></tr></table>'+
-    '<div class="ac">Próxima acción: '+p.accion+'</div>';
+  if(p.grupo){ GSEL=p.grupo; F.innerHTML=listaHTML(p); }
+  else F.innerHTML=fichaHTML(p);
   F.style.display="block";
   const fx=mejor.x/k+14+CV.offsetLeft, fy=mejor.y/k-30+CV.offsetTop;
   F.style.left=Math.min(CV.offsetLeft+b.width-250,Math.max(6,fx))+"px";
