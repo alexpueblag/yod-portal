@@ -1205,7 +1205,6 @@ async function conectarPPP(){
     const r=await fetch(PPP_GAS+"?recurso=board&t="+Date.now(),{cache:"no-store"});
     const j=await r.json(); if(!j.ok||!j.kpis) throw 0;
     const kp=j.kpis, pag=kp.clientes||0;
-    ORIG[1].f=pag+"/8"; ORIG[1].p=Math.min(8,pag);          // la torre PPP dice la verdad
     KPIHEX_TOP[1]={n:pag+"/8", lbl:"PPP PAGADOS", c:pag>0?"verde":"rojo", st:"linea"};
     KPIHEX_TOP[6]={n:String(kp.leads??0), lbl:"LEADS PPP", c:"azul", st:"linea"};
     KPIHEX_TOP[7]={n:String(kp.agendadas??0), lbl:"AGENDADAS PPP", c:(kp.agendadas||0)>0?"verde":"ambar", st:"linea"};
@@ -1348,14 +1347,20 @@ async function conectarCRM(){
       "&t="+Date.now(),{cache:"no-store"});
     const j=await r.json(); if(!j.ok||!Array.isArray(j.leads)) throw j&&j.error||0;
     const EI={ADA:0,PPP:1,OBR:2,LOT:3,CDS:4}, FI={"CONTACTABLE":0,"CALIFICADO":1,"PROPUESTA":2,"NEGOCIACIÓN":3};
-    const porEmb=[0,0,0,0,0];
+    const porEmb=[0,0,0,0,0], avanz=[0,0,0,0,0];
     const m=[0,1,2,3,4].map(()=> [ [],[],[],[] ]);
     j.leads.forEach(r=>{
       const i=EI[r.emb]??0, f=FI[r.filtro];
       if(f==null) return;
       m[i][f].push(leadVivo(r)); porEmb[i]++;
+      if(r.filtro==="PROPUESTA"||r.filtro==="NEGOCIACIÓN") avanz[i]++;
     });
-    ORIG.forEach((o,i)=>{ if(i!==1){ o.f=String(porEmb[i]); o.p=Math.min(o.h,porEmb[i]); } });
+    ORIG.forEach((o,i)=>{
+      o.h = Math.max(1, porEmb[i]);            // huecos = los que entraron
+      o.p = avanz[i];                          // piezas  = los que avanzaron
+      o.f = porEmb[i] + " → " + avanz[i];
+      o.sub = "entraron → avanzaron";
+    });
     setLeadsCRM(m);
     if(j.kpis && j.kpis.enJuego!=null) VBLQ=j.kpis.enJuego;   // criterio Sheetify
     if(j.kpis && j.kpis.vanTarde!=null) NBLQ=j.kpis.vanTarde; // una sola cuenta, la del motor
