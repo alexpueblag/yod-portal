@@ -906,8 +906,10 @@ function bordes(){
   // ARCHIVO · gaveta medio abierta
   quad(30,930,220,92,"#B49A6C","rgba(70,52,26,.6)",1.8);
   quad(38,938,204,74,"#8A6A38");
-  txt(ARCD?("ARCHIVO · "+ARCD.length+" ("+ARCD.filter(a=>a.motivo==="dormido").length+
-    " dormidos)"):"ARCHIVO · —",140,1042,11,M.tinta2,700);
+  if(ARCD){ const dm=ARCD.filter(a=>a.motivo==="dormido").length,
+                  pr=ARCD.filter(a=>String(a.motivo).indexOf("prueba")===0).length;
+    txt("ARCHIVO · "+ARCD.length+" ("+dm+" dormidos · "+pr+" pruebas)",140,1042,10.5,M.tinta2,700);
+  } else txt("ARCHIVO · —",140,1042,11,M.tinta2,700);
   for(let i=0;i<12;i++){ const hx=58+(i%6)*32, hy=958+((i/6)|0)*30; hoyo(hx,hy);
     if(!ARCD||!ARCD[i]) continue;
     if(i<11) canica(hx,hy,"gris",0,ARCD[i]);
@@ -1205,8 +1207,14 @@ async function conectarPPP(){
     const r=await fetch(PPP_GAS+"?recurso=board&t="+Date.now(),{cache:"no-store"});
     const j=await r.json(); if(!j.ok||!j.kpis) throw 0;
     const kp=j.kpis, pag=kp.clientes||0;
+    const dias=(j.actividad_por_dia||[]);
+    const humanos=dias.filter(d=>(d.empezaron||0)>0);       // días con interacción real
+    const visHum=humanos.reduce((a,d)=>a+(d.visitas||0),0);
+    const visTot=dias.reduce((a,d)=>a+(d.visitas||0),0);
     KPIHEX_TOP[1]={n:pag+"/8", lbl:"PPP PAGADOS", c:pag>0?"verde":"rojo", st:"linea"};
-    KPIHEX_TOP[6]={n:String(kp.leads??0), lbl:"LEADS PPP", c:"azul", st:"linea"};
+    // los conteos de leads/agendadas los manda el CRM (ya sin pruebas); aquí va el tráfico
+    KPIHEX_TOP[6]={n:visHum+"/"+visTot, lbl:"VISITAS ÚTILES PPP",
+      c:visTot&&visHum/visTot>=.5?"verde":"ambar", st:"linea"};
     KPIHEX_TOP[7]={n:String(kp.agendadas??0), lbl:"AGENDADAS PPP", c:(kp.agendadas||0)>0?"verde":"ambar", st:"linea"};
     pintar();
     console.log("✓ PPP en línea · pagados "+pag+" · leads "+kp.leads+" · agendadas "+kp.agendadas);
@@ -1364,9 +1372,13 @@ async function conectarCRM(){
     setLeadsCRM(m);
     if(j.kpis && j.kpis.enJuego!=null) VBLQ=j.kpis.enJuego;   // criterio Sheetify
     if(j.kpis && j.kpis.vanTarde!=null) NBLQ=j.kpis.vanTarde; // una sola cuenta, la del motor
-    ARCD=(j.archivo||[]).map(r=>({...leadVivo(r), st:"gris", nodo:"ARC",
+    const bolsa=(j.archivo||[]).concat(j.pruebas||[]);
+    ARCD=bolsa.map(r=>({...leadVivo(r), st:"gris", nodo:"ARC",
       motivo:r.motivo||"perdido",
-      accion:r.motivo==="dormido"?("Dormido "+r.dias+" días · rescatable"):"Perdido · reactivable"}));
+      accion: r.motivo==="dormido"     ? ("Dormido "+r.dias+" días · rescatable")
+            : r.motivo==="prueba-equipo"? "Prueba del equipo · no cuenta"
+            : r.motivo==="prueba-previa"? "Antes del arranque · no cuenta"
+            : "Perdido · reactivable"}));
     const k=j.kpis||{};
     KPIHEX_TOP[0]={n:String(k.contratosADA??0), lbl:"CONTRATOS A DE A",
       c:(k.contratosADA||0)>0?"verde":"rojo", st:"linea"};
