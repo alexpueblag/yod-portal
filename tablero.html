@@ -451,13 +451,34 @@ function relojArena(){
 /* ═══ 4 · ORÍGENES ═══ */
 function origenes(){
   ORIG.forEach(o=>{
-    // bandeja de hoyuelos
-    const bw=Math.max(120,o.h*26+22);
-    quad(o.x-bw/2,PLY-44,bw,36,M.kraft,"rgba(90,76,48,.42)",1.4);
-    for(let i=0;i<o.h;i++){
-      const hx=o.x-bw/2+16+i*((bw-32)/Math.max(1,o.h-1));
-      hoyo(hx,PLY-26);
-      if(i<o.p) canica(hx,PLY-26,"verde",0,null);   // conteo real, sin ficha inventada
+    // La charola NUNCA rebasa el ancho de su placa. Con pocos huecos (≤8) es la
+    // fila de hoyuelos de siempre; con muchos (el inventario de 47 lotes, los 12
+    // frentes de obra) se vuelve MOSAICO CONTABLE: una loseta por hueco, las
+    // verdes son las piezas puestas. Mismo conteo real, sin cruzar el tablero.
+    if(o.h<=8){
+      const bw=Math.max(120,o.h*26+22);
+      quad(o.x-bw/2,PLY-44,bw,36,M.kraft,"rgba(90,76,48,.42)",1.4);
+      for(let i=0;i<o.h;i++){
+        const hx=o.x-bw/2+16+i*((bw-32)/Math.max(1,o.h-1));
+        hoyo(hx,PLY-26);
+        if(i<o.p) canica(hx,PLY-26,"verde",0,(o.items&&o.items[i])||null);
+      }
+    }else{
+      const cols=Math.min(12,o.h), rows=Math.ceil(o.h/cols);
+      const tw=13, th=7, gx=2, gy=2;
+      const bw=Math.max(120,cols*(tw+gx)-gx+20), bh=rows*(th+gy)-gy+14;
+      const top=PLY-8-bh;                       // el borde de abajo no se mueve
+      quad(o.x-bw/2,top,bw,bh,M.kraft,"rgba(90,76,48,.42)",1.4);
+      for(let i=0;i<o.h;i++){
+        const cx=o.x-bw/2+10+(i%cols)*(tw+gx), cy=top+7+Math.floor(i/cols)*(th+gy);
+        const lleno=i<o.p;
+        quad(cx,cy,tw,th, lleno?COL.verde[0]:"rgba(60,48,28,.16)",
+             lleno?"rgba(35,60,40,.6)":"rgba(35,28,16,.4)",0.8);
+      }
+      if(o.items&&o.items.length){               // picar la charola abre la lista
+        const [px,py]=P(o.x,top+bh/2);
+        HIT.push({x:px,y:py,r:30*sx(top+bh/2),d:{grupo:o.items,filtro:o.n},n:o.items.length,col:COL.verde[0]});
+      }
     }
     placaKPI(o.x,PLY,180,o.n,o.f,o.sub,o.p/o.h,M.verde);
   });
@@ -1243,6 +1264,12 @@ async function conectarMiramar(){
     ORIG[3].h=lo.length||47; ORIG[3].p=ap+vend;
     ORIG[3].f=(ap+vend)+"/"+(lo.length||47);
     ORIG[3].sub = enaj ? ("apartados · "+enaj+" enajenables") : "apartados · aún no enajenables";
+    // picar la charola = ver QUÉ lotes son (las losetas verdes)
+    ORIG[3].items = lo.filter(l=>["apartado","vendido"].includes(est(l))).map(l=>({
+      id:l.lote_id||"LOTE", tipo:(l.tipo||"lote")+" · "+(l.superficie_m2||"—")+" m²",
+      zona:"Real de Miramar", st:est(l)==="vendido"?"verde":"ambar", nodo:"LOT", emb:"LOT",
+      resp:"YoDesarrollo", valor:Number(l.precio_actual)||null,
+      accion:(est(l)==="vendido"?"Vendido":"Apartado")+" · etapa "+(l.etapa_precio||"—")}));
     KPIHEX_BOT[0]={n:TRAD.apr+"/"+TRAD.tot, lbl:"TRÁMITES MIRAMAR",
       c:TRAD.apr/TRAD.tot<0.5?"ambar":"verde", st:"linea"};
     KPIHEX_BOT[1]={n:String(TRAD.blq), lbl:"BLOQUEADOS", c:TRAD.blq?"rojo":"verde", st:"linea"};
@@ -1278,6 +1305,13 @@ async function conectarObra(){
     ORIG[2].p = listos;
     ORIG[2].f = pctTxt;
     ORIG[2].sub = (k.ejecutado>0 ? "avance medido · " : "sin capturar · ") + nombres.length + " frentes";
+    // picar la charola = ver el estado de CADA frente
+    ORIG[2].items = nombres.map(n=>{ const f=fr[n], pc=f.importe>0?f.ejecutado/f.importe:0;
+      return { id:n, tipo:Math.round(pc*100)+"% ejecutado", zona:"Casa Alysa",
+        st:pc>=0.999?"verde":(pc>0?"ambar":"gris"), nodo:"OBR", emb:"OBR",
+        resp:"—", valor:Math.round(f.importe)||null,
+        accion: f.sinCostear>=f.n ? "Sin costear · no se puede medir"
+              : pc>=0.999 ? "Terminado" : (pc>0?"En curso":"No ha empezado") }; });
 
     // HEX #16 · el único hueco libre del anillo
     KPIHEX_BOT[7]={ n:pctTxt, lbl:"AVANCE OBRA",
