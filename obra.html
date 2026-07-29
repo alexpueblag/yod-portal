@@ -1,0 +1,363 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>YOD · Obra</title>
+<style>
+:root{
+  --ground:#0B0D11; --panel:#13161C; --panel2:#181C23; --line:#252A33;
+  --ink:#E8EAED; --muted:#8E939B; --dim:#666B74;
+  --gold:#C9A227; --ok:#5FA37C; --warn:#D2932E; --bad:#D9564A;
+  --serif:'Iowan Old Style','Palatino Linotype',Palatino,Georgia,serif;
+  --sans:'Avenir Next','Helvetica Neue',system-ui,-apple-system,sans-serif;
+  --mono:ui-monospace,'SF Mono',Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:64rem;margin:0 auto;padding:0 1.1rem 5rem}
+a{color:var(--gold)}
+button{font-family:inherit}
+
+/* candado */
+#gate{position:fixed;inset:0;background:var(--ground);display:flex;align-items:center;justify-content:center;z-index:50;padding:1.5rem}
+#gate.off{display:none}
+.gbox{max-width:23rem;width:100%;text-align:center}
+.gbox h1{font-family:var(--serif);font-weight:400;font-size:2rem;margin:0 0 .3rem}
+.gbox p{color:var(--muted);font-size:.9rem;margin:0 0 1.4rem}
+.gbox input{width:100%;padding:.75rem .9rem;background:var(--panel);border:1px solid var(--line);border-radius:2px;color:var(--ink);font-family:var(--mono);font-size:1rem;text-align:center}
+.gbox button{width:100%;margin-top:.6rem;padding:.75rem;background:var(--gold);border:none;border-radius:2px;color:#15171B;font-weight:700;font-size:.95rem;cursor:pointer}
+.gerr{color:var(--bad);font-size:.85rem;min-height:1.3rem;margin-top:.5rem}
+
+header{border-bottom:1px solid var(--line);padding:1.6rem 0 1.1rem;margin-bottom:1.4rem}
+.eyebrow{font-family:var(--mono);font-size:.66rem;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin:0 0 .4rem}
+header h1{font-family:var(--serif);font-weight:400;font-size:clamp(1.7rem,4.5vw,2.5rem);margin:0;line-height:1.1}
+.quien{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin-top:.9rem;font-size:.85rem;color:var(--muted)}
+.quien select{background:var(--panel);border:1px solid var(--line);color:var(--ink);border-radius:2px;padding:.35rem .5rem;font-family:inherit;font-size:.85rem}
+.rolchip{font-family:var(--mono);font-size:.64rem;letter-spacing:.08em;text-transform:uppercase;padding:.14rem .45rem;border:1px solid var(--gold);color:var(--gold);border-radius:1px}
+
+nav{display:flex;gap:.3rem;border-bottom:1px solid var(--line);margin-bottom:1.4rem;overflow-x:auto}
+nav button{background:none;border:1px solid transparent;border-bottom:none;color:var(--muted);font-size:.86rem;font-weight:600;padding:.65rem .95rem;cursor:pointer;border-radius:2px 2px 0 0;margin-bottom:-1px;white-space:nowrap}
+nav button[aria-selected=true]{background:var(--panel);border-color:var(--line);color:var(--ink)}
+nav button .b{display:inline-block;min-width:1.1rem;padding:0 .25rem;margin-left:.35rem;background:var(--bad);color:#fff;border-radius:9px;font-size:.66rem;font-family:var(--mono);text-align:center}
+.pane[hidden]{display:none}
+
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(8.5rem,1fr));gap:.55rem;margin-bottom:1.3rem}
+.kp{background:var(--panel);border:1px solid var(--line);border-radius:2px;padding:.7rem .85rem}
+.kp .v{font-family:var(--mono);font-size:1.2rem;font-weight:600;font-variant-numeric:tabular-nums}
+.kp .l{font-family:var(--mono);font-size:.62rem;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);margin-top:.1rem}
+
+.card{background:var(--panel);border:1px solid var(--line);border-radius:2px;margin-bottom:.6rem;overflow:hidden}
+.card>summary{list-style:none;cursor:pointer;padding:.8rem 1rem;display:flex;flex-wrap:wrap;align-items:baseline;gap:.6rem;background:var(--panel2)}
+.card>summary::-webkit-details-marker{display:none}
+.card>summary::before{content:"▸";color:var(--gold);font-size:.75rem;transition:transform .15s}
+.card[open]>summary::before{transform:rotate(90deg)}
+.card .nm{font-weight:600;font-size:.93rem}
+.card .mt{margin-left:auto;font-family:var(--mono);font-size:.78rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.body{padding:.5rem 1rem 1rem}
+
+.bar{height:.35rem;background:var(--panel2);border-radius:1px;overflow:hidden;margin-top:.35rem;width:100%}
+.bar i{display:block;height:100%;background:var(--gold)}
+
+table{border-collapse:collapse;width:100%;font-size:.82rem}
+th{text-align:left;font-family:var(--mono);font-weight:500;font-size:.62rem;letter-spacing:.09em;text-transform:uppercase;color:var(--dim);padding:.45rem .5rem;border-bottom:1px solid var(--line)}
+td{padding:.4rem .5rem;border-bottom:1px solid var(--line);vertical-align:middle}
+tbody tr:last-child td{border-bottom:none}
+td.n{font-family:var(--mono);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap}
+td input[type=number]{width:5.5rem;padding:.3rem .4rem;background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:2px;font-family:var(--mono);font-size:.82rem;text-align:right}
+td input[type=number]:focus{outline:2px solid var(--gold);outline-offset:0}
+.sinp{color:var(--dim)}
+
+textarea{width:100%;padding:.55rem .65rem;background:var(--panel2);border:1px solid var(--line);color:var(--ink);border-radius:2px;font-family:inherit;font-size:.88rem;resize:vertical;min-height:3.2rem}
+.acciones{display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.9rem;align-items:center}
+.btn{padding:.55rem 1rem;border:1px solid var(--line);background:var(--panel2);color:var(--ink);border-radius:2px;font-size:.86rem;font-weight:600;cursor:pointer}
+.btn.pri{background:var(--gold);border-color:var(--gold);color:#15171B}
+.btn.no{border-color:color-mix(in srgb,var(--bad) 50%,transparent);color:var(--bad)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.msg{font-size:.85rem;margin-left:.2rem}
+.msg.ok{color:var(--ok)} .msg.err{color:var(--bad)}
+
+.pill{display:inline-block;font-family:var(--mono);font-size:.62rem;letter-spacing:.06em;text-transform:uppercase;padding:.1rem .4rem;border:1px solid;border-radius:1px;white-space:nowrap}
+.p-ok{color:var(--ok);border-color:color-mix(in srgb,var(--ok) 45%,transparent)}
+.p-warn{color:var(--warn);border-color:color-mix(in srgb,var(--warn) 45%,transparent)}
+.p-bad{color:var(--bad);border-color:color-mix(in srgb,var(--bad) 45%,transparent)}
+.p-dim{color:var(--dim);border-color:var(--line)}
+
+.vacio{color:var(--muted);font-size:.9rem;padding:1.6rem 0;text-align:center}
+.nota{color:var(--muted);font-size:.85rem;margin:.4rem 0 0}
+.cadena{font-family:var(--mono);font-size:.68rem;letter-spacing:.05em;color:var(--dim);margin-top:1.6rem;padding-top:1rem;border-top:1px solid var(--line)}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+</style>
+</head>
+<body>
+
+<div id="gate">
+  <div class="gbox">
+    <h1>YOD · Obra</h1>
+    <p>Casa Alysa · avance con cadena de aprobación</p>
+    <input id="clave" type="password" placeholder="clave" autocomplete="current-password">
+    <button id="btnEntrar">Entrar</button>
+    <div class="gerr" id="gerr"></div>
+  </div>
+</div>
+
+<div class="wrap" id="app" style="display:none">
+  <header>
+    <p class="eyebrow" id="hProy">Casa Alysa</p>
+    <h1>Avance de obra</h1>
+    <div class="quien">
+      <span>Soy</span>
+      <select id="selQuien"></select>
+      <span class="rolchip" id="miRol">—</span>
+      <span id="hInfo" style="margin-left:auto;font-family:var(--mono);font-size:.72rem;color:var(--dim)"></span>
+    </div>
+  </header>
+
+  <nav role="tablist">
+    <button id="tEstado" role="tab" aria-selected="true" aria-controls="pEstado">Estado</button>
+    <button id="tCapturar" role="tab" aria-selected="false" aria-controls="pCapturar">Capturar avance</button>
+    <button id="tBandeja" role="tab" aria-selected="false" aria-controls="pBandeja">Mi bandeja<span class="b" id="badge" hidden>0</span></button>
+  </nav>
+
+  <div class="pane" id="pEstado" role="tabpanel">
+    <div class="kpis" id="kpis"></div>
+    <div id="frentes"></div>
+  </div>
+
+  <div class="pane" id="pCapturar" role="tabpanel" hidden>
+    <p class="nota">Escoge el frente en el que trabajaste y anota <b>cuánto llevas ejecutado de cada concepto</b>. Solo lo que se avanzó hoy — el sistema lo acumula.</p>
+    <div class="quien" style="margin:.9rem 0 1rem">
+      <span>Frente</span>
+      <select id="selFrente"></select>
+    </div>
+    <div id="capTabla"></div>
+    <div id="capPie" hidden>
+      <textarea id="capNota" placeholder="Nota para quien revisa: qué se hizo, qué falta, cualquier cosa que deba saber."></textarea>
+      <div class="acciones">
+        <button class="btn pri" id="btnEnviar">Enviar a revisión</button>
+        <span class="msg" id="capMsg"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="pane" id="pBandeja" role="tabpanel" hidden>
+    <div id="bandeja"></div>
+  </div>
+
+  <div class="cadena" id="pieCadena"></div>
+</div>
+
+<script>
+(function(){
+"use strict";
+const GAS="https://script.google.com/macros/s/AKfycbyVb6Y7m00FyhoGa9ZoQul1j6IlHdgsCNalaZVGmA0Csh91TqxNvyDT0YQurz-hViA0/exec";
+const LSK="pyod_clave_v1", LSQ="yod_obra_quien";
+let K=localStorage.getItem(LSK)||"", D=null, QUIEN="", ROL="";
+
+const $=s=>document.querySelector(s);
+const dinero=n=>"$"+(Number(n)||0).toLocaleString("es-MX",{minimumFractionDigits:2,maximumFractionDigits:2});
+const pct=n=>((Number(n)||0)*100).toFixed(1)+"%";
+const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+async function pedir(recurso,extra){
+  const u=GAS+"?recurso="+recurso+"&k="+encodeURIComponent(K)+(extra||"")+"&cb="+Date.now();
+  const r=await fetch(u,{cache:"no-store"});
+  const j=await r.json();
+  if(!j.ok) throw (j.error||"error");
+  return j;
+}
+async function mandar(cuerpo){
+  // sin cabecera Content-Type a propósito: el navegador manda text/plain y no hay preflight CORS
+  const r=await fetch(GAS,{method:"POST",body:JSON.stringify(Object.assign({k:K},cuerpo))});
+  const j=await r.json();
+  if(!j.ok) throw (j.error||"error");
+  return j.r;
+}
+
+/* ── candado ── */
+async function entrar(){
+  const v=$("#clave").value.trim();
+  if(!v){ $("#gerr").textContent="Escribe la clave"; return; }
+  $("#btnEntrar").disabled=true; $("#gerr").textContent="";
+  try{ K=v; await cargar(); localStorage.setItem(LSK,v); abrir(); }
+  catch(e){ $("#gerr").textContent = e==="clave" ? "Clave incorrecta" : "Sin conexión con el motor de obra"; }
+  $("#btnEntrar").disabled=false;
+}
+function abrir(){ $("#gate").classList.add("off"); $("#app").style.display=""; pintar(); }
+
+/* ── datos ── */
+async function cargar(){ D=await pedir("board"); }
+
+function personas(){ return (D.roles||[]).filter(r=>String(r.activo).toUpperCase()==="SI"); }
+function rolDe(p){ const r=personas().find(x=>x.persona===p); return r?r.rol:""; }
+
+/* ── estado ── */
+function pintarEstado(){
+  const k=D.kpi||{}, fr=D.frentes||{};
+  const nombres=Object.keys(fr).sort((a,b)=>fr[b].importe-fr[a].importe);
+  const listos=nombres.filter(n=>fr[n].importe>0&&fr[n].ejecutado>=fr[n].importe*0.999).length;
+  $("#kpis").innerHTML=[
+    [pct(k.avance),"avance medido"],
+    [dinero(k.ejecutado),"ejecutado"],
+    [dinero(k.importe),"por ejecutar"],
+    [listos+"/"+nombres.length,"frentes listos"],
+    [String(k.conceptos||0),"conceptos"],
+    [String((k.pendientes||0)+(k.porAutorizar||0)),"esperando firma"]
+  ].map(([v,l])=>'<div class="kp"><div class="v">'+esc(v)+'</div><div class="l">'+esc(l)+'</div></div>').join("");
+
+  $("#frentes").innerHTML=nombres.map(n=>{
+    const f=fr[n], p=f.importe>0?f.ejecutado/f.importe:0;
+    const est = f.sinCostear>=f.n ? '<span class="pill p-bad">sin costear</span>'
+              : p>=0.999 ? '<span class="pill p-ok">terminado</span>'
+              : p>0 ? '<span class="pill p-warn">en curso</span>'
+              : '<span class="pill p-dim">no empieza</span>';
+    const conc=(D.conceptos||[]).filter(c=>c.frente===n);
+    return '<details class="card"><summary><span class="nm">'+esc(n)+'</span>'+est+
+      '<span class="mt">'+pct(p)+' · '+dinero(f.importe)+'</span></summary><div class="body">'+
+      '<div class="bar"><i style="width:'+(Math.min(1,p)*100).toFixed(1)+'%"></i></div>'+
+      (f.sinCostear?'<p class="nota">'+f.sinCostear+' de '+f.n+' conceptos sin precio: no se pueden medir hasta costearlos.</p>':'')+
+      '<table><thead><tr><th>Concepto</th><th style="text-align:right">Cant.</th><th>Un</th><th style="text-align:right">Importe</th><th style="text-align:right">Avance</th></tr></thead><tbody>'+
+      conc.map(c=>'<tr'+(Number(c.importe)?'':' class="sinp"')+'><td>'+esc(String(c.descripcion).slice(0,90))+'</td>'+
+        '<td class="n">'+(c.cantidad===""?"—":Number(c.cantidad).toLocaleString("es-MX"))+'</td>'+
+        '<td>'+esc(c.unidad)+'</td><td class="n">'+(Number(c.importe)?dinero(c.importe):"—")+'</td>'+
+        '<td class="n">'+(Number(c.cantidad)?pct(c.avance_pct):"—")+'</td></tr>').join("")+
+      '</tbody></table></div></details>';
+  }).join("");
+}
+
+/* ── capturar ── */
+function pintarCaptura(){
+  const fr=D.frentes||{}, sel=$("#selFrente");
+  const nombres=Object.keys(fr).sort();
+  if(sel.options.length!==nombres.length){
+    sel.innerHTML=nombres.map(n=>'<option>'+esc(n)+'</option>').join("");
+  }
+  const n=sel.value||nombres[0]; sel.value=n;
+  const conc=(D.conceptos||[]).filter(c=>c.frente===n && Number(c.cantidad)>0 && Number(c.precio_unitario)>0);
+  if(!conc.length){
+    $("#capTabla").innerHTML='<p class="vacio">Este frente no tiene conceptos con cantidad y precio. Hay que costearlo antes de poder medirlo.</p>';
+    $("#capPie").hidden=true; return;
+  }
+  $("#capTabla").innerHTML='<table><thead><tr><th>Concepto</th><th>Un</th><th style="text-align:right">Total</th><th style="text-align:right">Ya lleva</th><th style="text-align:right">Ejecutado ahora</th></tr></thead><tbody>'+
+    conc.map(c=>{
+      const falta=Number(c.cantidad)-Number(c.cant_ejecutada||0);
+      return '<tr><td>'+esc(String(c.descripcion).slice(0,80))+'</td><td>'+esc(c.unidad)+'</td>'+
+      '<td class="n">'+Number(c.cantidad).toLocaleString("es-MX")+'</td>'+
+      '<td class="n">'+Number(c.cant_ejecutada||0).toLocaleString("es-MX")+'</td>'+
+      '<td class="n"><input type="number" min="0" step="any" max="'+falta+'" data-id="'+esc(c.id)+'" placeholder="0"></td></tr>';
+    }).join("")+'</tbody></table>';
+  $("#capPie").hidden=false; $("#capMsg").textContent="";
+}
+
+async function enviar(){
+  const inputs=[...document.querySelectorAll("#capTabla input[data-id]")];
+  const detalle=inputs.map(i=>({id_concepto:i.dataset.id,cantidad_ejecutada:Number(i.value)||0}))
+                      .filter(d=>d.cantidad_ejecutada>0);
+  const m=$("#capMsg"); m.className="msg";
+  if(!detalle.length){ m.className="msg err"; m.textContent="No anotaste ninguna cantidad."; return; }
+  if(!QUIEN){ m.className="msg err"; m.textContent="Dime quién eres arriba."; return; }
+  $("#btnEnviar").disabled=true; m.textContent="Enviando…";
+  try{
+    const r=await mandar({accion:"proponer",persona:QUIEN,frente:$("#selFrente").value,
+      nota:$("#capNota").value.trim(),detalle:detalle});
+    $("#capNota").value="";
+    await cargar(); pintar();                       // repinta con los datos nuevos…
+    const m2=$("#capMsg"); m2.className="msg ok";   // …y hasta entonces el aviso, para que no se lo lleve
+    m2.textContent = r.autoAprobado
+      ? "Listo: "+r.id+" quedó autorizado directo ("+dinero(r.monto)+"), porque tú autorizas."
+      : "Enviado: "+r.id+" ("+dinero(r.monto)+") está esperando revisión.";
+  }catch(e){ m.className="msg err"; m.textContent="No se pudo: "+e; }
+  $("#btnEnviar").disabled=false;
+}
+
+/* ── bandeja ── */
+function meToca(a){
+  if(ROL==="AUTORIZA") return a.estado==="VERIFICADO"||a.estado==="PROPUESTO";
+  if(ROL==="VERIFICA")  return a.estado==="PROPUESTO" && a.propuesto_por!==QUIEN;
+  return false;
+}
+function pintarBandeja(){
+  const mios=(D.avances||[]).filter(meToca);
+  const b=$("#badge");
+  if(mios.length){ b.hidden=false; b.textContent=mios.length; } else b.hidden=true;
+  if(!ROL){ $("#bandeja").innerHTML='<p class="vacio">Dime quién eres arriba para ver lo que te toca.</p>'; return; }
+  if(!mios.length){
+    $("#bandeja").innerHTML='<p class="vacio">Nada esperando tu firma.'+
+      (ROL==="CAPTURA"?' Tu trabajo es capturar: ve a «Capturar avance».':'')+'</p>';
+    return;
+  }
+  $("#bandeja").innerHTML=mios.map(a=>{
+    const det=(D.detalle||[]).filter(d=>d.id_avance===a.id);
+    const acto = a.estado==="PROPUESTO" ? "Verificar" : "Autorizar el pago";
+    return '<details class="card" open><summary><span class="nm">'+esc(a.frente||"—")+'</span>'+
+      '<span class="pill '+(a.estado==="PROPUESTO"?"p-warn":"p-ok")+'">'+esc(a.estado)+'</span>'+
+      '<span class="mt">'+dinero(a.monto_propuesto)+'</span></summary><div class="body">'+
+      '<p class="nota">'+esc(a.id)+' · lo propuso <b>'+esc(a.propuesto_por)+'</b>'+
+      (a.nota?' · «'+esc(a.nota)+'»':"")+
+      (a.verificado_por?' · verificó <b>'+esc(a.verificado_por)+'</b>':"")+'</p>'+
+      (det.length?'<table><thead><tr><th>Concepto</th><th style="text-align:right">Cantidad</th><th style="text-align:right">Importe</th></tr></thead><tbody>'+
+        det.map(d=>{
+          const c=(D.conceptos||[]).find(x=>x.id===d.id_concepto)||{};
+          return '<tr><td>'+esc(String(c.descripcion||d.id_concepto).slice(0,80))+'</td>'+
+            '<td class="n">'+Number(d.cantidad_ejecutada).toLocaleString("es-MX")+' '+esc(c.unidad||"")+'</td>'+
+            '<td class="n">'+dinero(d.importe)+'</td></tr>';
+        }).join("")+'</tbody></table>':'<p class="nota">Sin detalle.</p>')+
+      '<textarea id="nota_'+esc(a.id)+'" placeholder="Nota (opcional). Si rechazas, di por qué."></textarea>'+
+      '<div class="acciones">'+
+        '<button class="btn pri" data-mv="'+esc(a.id)+'" data-si="1">'+acto+'</button>'+
+        '<button class="btn no" data-mv="'+esc(a.id)+'" data-si="0">Rechazar</button>'+
+        '<span class="msg" id="msg_'+esc(a.id)+'"></span>'+
+      '</div></div></details>';
+  }).join("");
+  document.querySelectorAll("[data-mv]").forEach(b=>b.onclick=()=>mover(b.dataset.mv,b.dataset.si==="1",b));
+}
+async function mover(id,acepta,btn){
+  const m=document.getElementById("msg_"+id); m.className="msg"; m.textContent="…";
+  document.querySelectorAll('[data-mv="'+id+'"]').forEach(x=>x.disabled=true);
+  try{
+    const r=await mandar({accion:"mover",persona:QUIEN,id_avance:id,acepta:acepta,
+      nota:(document.getElementById("nota_"+id)||{}).value||""});
+    m.className="msg ok"; m.textContent=r.de+" → "+r.a;
+    await cargar(); pintar();
+  }catch(e){
+    m.className="msg err"; m.textContent="No se pudo: "+e;
+    document.querySelectorAll('[data-mv="'+id+'"]').forEach(x=>x.disabled=false);
+  }
+}
+
+/* ── pintar ── */
+function pintar(){
+  const sel=$("#selQuien"), ps=personas();
+  if(sel.options.length!==ps.length){
+    sel.innerHTML='<option value="">—</option>'+ps.map(r=>'<option>'+esc(r.persona)+'</option>').join("");
+    const g=localStorage.getItem(LSQ); if(g && ps.some(r=>r.persona===g)) sel.value=g;
+  }
+  QUIEN=sel.value; ROL=rolDe(QUIEN);
+  $("#miRol").textContent=ROL||"sin rol";
+  $("#miRol").style.opacity=ROL?1:.4;
+  const k=D.kpi||{};
+  $("#hInfo").textContent=(k.conceptos||0)+" conceptos · "+(k.obras||1)+" obra"+((k.obras||1)>1?"s":"");
+  $("#pieCadena").textContent="Rodolfo propone  →  Mariana o Alma verifican  →  Alejandro o Sayri autorizan el pago"+
+    "   ·   quien autoriza y captura, queda autorizado directo y sellado";
+  pintarEstado(); pintarCaptura(); pintarBandeja();
+}
+
+/* ── pestañas ── */
+const T=[["#tEstado","#pEstado"],["#tCapturar","#pCapturar"],["#tBandeja","#pBandeja"]];
+T.forEach(([t,p],i)=>$(t).onclick=()=>T.forEach(([tt,pp],j)=>{
+  $(tt).setAttribute("aria-selected",j===i?"true":"false"); $(pp).hidden=(j!==i);
+}));
+$("#selQuien").onchange=()=>{ localStorage.setItem(LSQ,$("#selQuien").value); pintar(); };
+$("#selFrente").onchange=pintarCaptura;
+$("#btnEnviar").onclick=enviar;
+$("#btnEntrar").onclick=entrar;
+$("#clave").addEventListener("keydown",e=>{ if(e.key==="Enter") entrar(); });
+
+if(K) cargar().then(abrir).catch(e=>{
+  if(e==="clave"){ localStorage.removeItem(LSK); K=""; $("#gerr").textContent="La clave cambió"; }
+  else $("#gerr").textContent="Sin conexión con el motor de obra";
+});
+})();
+</script>
+</body>
+</html>
