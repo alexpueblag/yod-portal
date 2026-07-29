@@ -296,8 +296,8 @@ const ETP={ADA:"Origen · A de A",PPP:"Origen · PPP",ABC:"Origen · ABC",OBR:"O
 const ORIG=[
  {x:190, k:"ADA", n:"A DE A",       f:"—",  h:6,  p:0, ic:"casa",    sub:"contratos · meta"},
  {x:465, k:"PPP", n:"PPP",          f:"—",  h:8,  p:0, ic:"graf",    sub:"pagados · meta"},
- {x:740, k:"OBR", n:"OBRA",         f:"—",  h:9,  p:0, ic:"grua",    sub:"obra nueva · meta"},
- {x:1015,k:"LOT", n:"LOTES",        f:"—", h:10, p:0, ic:"mosaico", sub:"apartados · meta"},
+ {x:740, k:"OBR", n:"OBRA",         f:"—", h:12,  p:0, ic:"grua",    sub:"frentes · avance medido"},
+ {x:1015,k:"LOT", n:"LOTES",        f:"—", h:47,  p:0, ic:"mosaico", sub:"apartados · inventario"},
  {x:1290,k:"CDS", n:"CODESARROLLO", f:"—",  h:3,  p:0, ic:"pieza",   sub:"alianzas · meta"}
 ];
 const TY=126, PLY=200;                 // torres / placas
@@ -993,7 +993,8 @@ const KPIHEX_BOT=[
  {n:"—",    lbl:"HITOS ALYSA",      c:"ambar", st:"fuente",    src:"track-alysa"},
  {n:"—",    lbl:"COBRADO CODES",    c:"ambar", st:"fuente",    src:"portal Co-desarrolladores"},
  {n:"—",    lbl:"APARTADOS",        c:"ambar", st:"fuente",    src:"board Real Miramar"},
- {n:"—",    lbl:"CON FOLIO CODES",  c:"ambar", st:"fuente",    src:"portal Co-desarrolladores"}, null];
+ {n:"—",    lbl:"CON FOLIO CODES",  c:"ambar", st:"fuente",    src:"portal Co-desarrolladores"},
+ {n:"—",    lbl:"AVANCE OBRA",     c:"ambar", st:"fuente",    src:"motor de obra · Casa Alysa"}];
 function hexTile(cx,cy,k,num){
   const r=27;
   g.save(); g.translate(cx,cy);
@@ -1235,6 +1236,13 @@ async function conectarMiramar(){
     const POS=[4,11,7,14,1,9,16,3,12,5,0,8,15,2,10,6,13];
     APSET=new Set(POS.slice(0,Math.min(ap,POS.length)));
     PROJ[1].f=ap+"/"+lo.length; PROJ[1].p=lo.length?ap/lo.length:0;
+    // LA TORRE DE LOTES · el inventario real ya venía en este mismo fetch y se tiraba.
+    // huecos = lotes del inventario · piezas = apartados. Ley del KPI respetada.
+    const vend=lo.filter(l=>est(l)==="vendido").length,
+          enaj=lo.filter(l=>String(l.enajenable||"").trim().toLowerCase()==="si").length;
+    ORIG[3].h=lo.length||47; ORIG[3].p=ap+vend;
+    ORIG[3].f=(ap+vend)+"/"+(lo.length||47);
+    ORIG[3].sub = enaj ? ("apartados · "+enaj+" enajenables") : "apartados · aún no enajenables";
     KPIHEX_BOT[0]={n:TRAD.apr+"/"+TRAD.tot, lbl:"TRÁMITES MIRAMAR",
       c:TRAD.apr/TRAD.tot<0.5?"ambar":"verde", st:"linea"};
     KPIHEX_BOT[1]={n:String(TRAD.blq), lbl:"BLOQUEADOS", c:TRAD.blq?"rojo":"verde", st:"linea"};
@@ -1243,6 +1251,50 @@ async function conectarMiramar(){
     console.log("✓ Miramar en línea · trámites "+TRAD.apr+"/"+TRAD.tot+
       " · "+TRAD.blq+" bloqueados · apartados "+ap+"/"+lo.length);
   }catch(e){ console.warn("Miramar sin línea", e); }
+}
+
+/* ═══ TRAMO OBRA · EN LÍNEA · el motor de avance con cadena de aprobación ═══
+   Rodolfo propone → Mariana o Alma verifican → Alejandro o Sayri autorizan.
+   El avance que llega aquí está MEDIDO (cantidad ejecutada × precio unitario),
+   no declarado: por eso puede contradecir al 81% que anda por otros lados. */
+const OBRA_GAS="https://script.google.com/macros/s/AKfycbyVb6Y7m00FyhoGa9ZoQul1j6IlHdgsCNalaZVGmA0Csh91TqxNvyDT0YQurz-hViA0/exec";
+let OBRD=null;
+async function conectarObra(){
+  if(!OBRA_GAS) return;
+  try{
+    const r=await fetch(OBRA_GAS+"?recurso=board&k="+encodeURIComponent(CLAVE_OK||"")+
+      "&cb="+Date.now(),{cache:"no-store"});
+    const j=await r.json(); if(!j.ok) throw j&&j.error||0;
+    const k=j.kpi||{}, fr=j.frentes||{};
+    const nombres=Object.keys(fr);
+    const listos=nombres.filter(n=>fr[n].importe>0 && fr[n].ejecutado>=fr[n].importe*0.999).length;
+    const pct=k.avance||0, pctTxt=(pct*100).toFixed(1)+"%";
+    OBRD={ pct, importe:k.importe||0, ejecutado:k.ejecutado||0,
+           conceptos:k.conceptos||0, frentes:nombres.length, listos,
+           pendientes:k.pendientes||0, porAutorizar:k.porAutorizar||0 };
+
+    // LA TORRE DE OBRA · huecos = frentes de trabajo · piezas = frentes terminados
+    ORIG[2].h = Math.max(1, nombres.length);
+    ORIG[2].p = listos;
+    ORIG[2].f = pctTxt;
+    ORIG[2].sub = (k.ejecutado>0 ? "avance medido · " : "sin capturar · ") + nombres.length + " frentes";
+
+    // HEX #16 · el único hueco libre del anillo
+    KPIHEX_BOT[7]={ n:pctTxt, lbl:"AVANCE OBRA",
+      c: pct>=0.8?"verde" : (pct>0?"ambar":"rojo"), st:"linea",
+      src:"motor de obra · Casa Alysa" };
+
+    // la maqueta de Alysa sigue contando HITOS; el avance de obra va en su subtítulo,
+    // para que ninguna de las dos cifras se disfrace de la otra
+    PROJ[0].sub = "hitos · obra " + (k.ejecutado>0 ? pctTxt : "sin medir");
+
+    pintar();
+    console.log("✓ Obra en línea · "+OBRD.conceptos+" conceptos · $"+
+      (OBRD.importe/1e6).toFixed(2)+"M · avance medido "+pctTxt+
+      " · "+listos+"/"+nombres.length+" frentes listos"+
+      (OBRD.pendientes?" · "+OBRD.pendientes+" por verificar":"")+
+      (OBRD.porAutorizar?" · "+OBRD.porAutorizar+" por autorizar":""));
+  }catch(e){ console.warn("Obra sin línea", e); }
 }
 
 /* ═══ TRAMO ALYSA + MARÍA · EN LÍNEA · hitos de sus tracks (usa la clave del candado) ═══ */
@@ -1362,7 +1414,11 @@ async function conectarCRM(){
       m[i][f].push(leadVivo(r)); porEmb[i]++;
       if(r.filtro==="PROPUESTA"||r.filtro==="NEGOCIACIÓN") avanz[i]++;
     });
+    // OJO: OBRA (2) y LOTES (3) NO son embudos de captación — tienen fuente propia
+    // (conectarObra y conectarMiramar). Si les pintáramos leads aquí, la grúa y el
+    // mosaico dirían "0" cuando lo que hay que ver es avance de obra e inventario.
     ORIG.forEach((o,i)=>{
+      if(i===2||i===3) return;                 // la torre de obra y la de lotes se llenan solas
       o.h = Math.max(1, porEmb[i]);            // huecos = los que entraron
       o.p = avanz[i];                          // piezas  = los que avanzaron
       o.f = porEmb[i] + " → " + avanz[i];
@@ -1432,6 +1488,7 @@ function abrir(){
   conectarTaller();
   conectarCodes();
   conectarCRM();
+  conectarObra();
   sondaFinance();
   avisarAlto(); setTimeout(avisarAlto,400); setTimeout(avisarAlto,1600);
   addEventListener("resize",avisarAlto);
