@@ -14,7 +14,10 @@
     'SYS-INTERIORES':'https://alexpueblag.github.io/interiores-aurum/',
     'SYS-INVERSION':'https://alexpueblag.github.io/yodesarrollo-board/',
     'SYS-MARKETING':'https://alexpueblag.github.io/aurum-board/',
-    'SYS-OBRA':'https://alexpueblag.github.io/yod-obra/'
+    /* Obra vive en obra.html de este mismo repo (motor multi-obra: Casa Alysa y las
+       que sigan). El destino anterior era el repo yod-obra, que se retiro el 2026-07-30
+       por traer su secreto de escritura en el bundle y la nomina en un data.json publico. */
+    'SYS-OBRA':'https://alexpueblag.github.io/yod-portal/obra.html'
   });
   var TRACK_DESTINATIONS=Object.freeze({
     'PRJ-RM':'https://alexpueblag.github.io/real-miramar-board/',
