@@ -27,10 +27,14 @@
 
   function moduleNode(row){
     var url=window.PortalCore.resolveUrl(row);if(!url)return null;
-    var link=document.createElement('a');link.className='module-card';link.href=url;link.rel='noopener';
+    // Control Maestro gobierna la disponibilidad: si el estado no es Activo, la tarjeta
+    // se muestra pero NO se convierte en enlace (antes siempre decía "Disponible" y abría).
+    var on=window.PortalCore.enabled(row),b=window.PortalCore.badge(row);
+    var link=document.createElement(on?'a':'div');link.className='module-card'+(on?'':' module-card-off');
+    if(on){link.href=url;link.rel='noopener';}else{link.setAttribute('aria-disabled','true');}
     var top=document.createElement('div');top.className='module-top';
     var icon=document.createElement('span');icon.className='module-icon';icon.innerHTML='<i class="ti ti-'+(ICONS[row.system_id]||window.PortalCore.safeIcon(row.icono))+'"></i>';
-    var status=document.createElement('span');status.className='module-state';status.textContent='Disponible';top.append(icon,status);
+    var status=document.createElement('span');status.className='module-state';status.textContent=on?'Disponible':b.text;top.append(icon,status);
     var title=document.createElement('h3');title.textContent=safeText(row.titulo_portal)||safeText(row.system_id);
     var desc=document.createElement('p');desc.textContent=safeText(row.descripcion_portal)||'Abrir espacio de trabajo.';
     var foot=document.createElement('footer');var audience=document.createElement('span');audience.textContent=safeText(row.audiencia)||'Equipo autorizado';var arrow=document.createElement('i');arrow.className='ti ti-arrow-up-right';foot.append(audience,arrow);
@@ -39,7 +43,10 @@
 
   function sidebarNode(row){
     var url=window.PortalCore.resolveUrl(row);if(!url)return null;
-    var a=document.createElement('a');a.className='nav-item';a.href=url;a.rel='noopener';a.dataset.systemId=row.system_id;
+    var on=window.PortalCore.enabled(row);
+    var a=document.createElement(on?'a':'span');a.className='nav-item'+(on?'':' nav-item-off');
+    if(on){a.href=url;a.rel='noopener';}else{a.setAttribute('aria-disabled','true');}
+    a.dataset.systemId=row.system_id;
     var i=document.createElement('i');i.className='ti ti-'+(ICONS[row.system_id]||window.PortalCore.safeIcon(row.icono));
     var s=document.createElement('span');s.textContent=safeText(row.titulo_portal)||safeText(row.system_id);
     a.append(i,s);return a;

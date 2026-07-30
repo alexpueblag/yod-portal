@@ -86,3 +86,8 @@ a:focus-visible,button:focus-visible,input:focus-visible,[tabindex]:focus-visibl
 .board-foot b{color:var(--ink);font-weight:600}
 @media(max-width:900px){ .board-frame iframe{height:560px} }
 @media(max-width:680px){ .board-frame iframe{height:440px} .board-foot{font-size:10.5px} }
+.module-card-off{opacity:.62;cursor:default}
+.module-card-off:hover,.module-card-off:focus-visible{transform:none;border-color:var(--line);box-shadow:none}
+.module-card-off .module-state{color:var(--muted)}
+.module-card-off footer i{display:none}
+.nav-item-off{opacity:.5;cursor:default}
