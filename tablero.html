@@ -1006,6 +1006,9 @@ function canicasCiclo(){
 const HEXCOL={verde:"#3FAE5E",ambar:"#E8A02B",rojo:"#C0453A",azul:"#2F5F92",gris:"#9A968C"};
 // estado: "linea" (verde, alimentado) · "fuente" (ámbar, existe la fuente, falta conectar)
 //         · "tentativo" (gris, el dato es de relleno y no tiene fuente todavía)
+//         · "cache" (ámbar hueco, es un dato guardado, no recién traído)
+//         · "ciego" (rojo, la fuente NO contestó o no mandó el campo — el hex dice "—", nunca 0.
+//                   Un cero con semáforo verde se lee como "hay que trabajar"; la verdad es "estoy ciego".)
 const KPIHEX_TOP=[
  {n:"—",    lbl:"CONTRATOS A DE A", c:"gris",  st:"tentativo", src:"Sheet CRM - YOD sin endpoint"},
  {n:"—",    lbl:"PPP PAGADOS",      c:"ambar", st:"fuente",    src:"GAS plan-potencial"},
@@ -1055,16 +1058,36 @@ function hexTile(cx,cy,k,num){
   g.fillStyle="#2E2A22"; g.textAlign="center"; g.textBaseline="middle";
   g.font="800 "+(k.n.length>4?9.5:12)+"px 'Helvetica Neue',Arial,sans-serif";
   g.fillText(k.n,0,0.5);
-  const dc=k.st==="linea"?"#3FAE5E":(k.st==="fuente"?"#E8A02B":"#9A968C");
+  const dc = k.st==="linea" ? "#3FAE5E"
+           : k.st==="ciego"  ? "#C0453A"
+           : (k.st==="fuente"||k.st==="cache") ? "#E8A02B" : "#9A968C";
   g.beginPath(); g.arc(r*0.44,r*0.46,3.3,0,7);
-  g.fillStyle=dc; g.fill();
-  g.strokeStyle="rgba(46,36,18,.5)"; g.lineWidth=1; g.stroke();
+  if(k.st==="cache"){ g.fillStyle="#F1E4C4"; g.fill(); g.strokeStyle=dc; g.lineWidth=1.6; g.stroke(); }
+  else { g.fillStyle=dc; g.fill();
+         g.strokeStyle="rgba(46,36,18,.5)"; g.lineWidth=1; g.stroke(); }
+  if(k.st==="ciego"){                       // tache: no es un dato, es una ausencia
+    g.strokeStyle="#C0453A"; g.lineWidth=1.4;
+    g.beginPath(); g.moveTo(r*0.44-2.6,r*0.46-2.6); g.lineTo(r*0.44+2.6,r*0.46+2.6);
+    g.moveTo(r*0.44+2.6,r*0.46-2.6); g.lineTo(r*0.44-2.6,r*0.46+2.6); g.stroke();
+  }
   g.fillStyle="rgba(70,58,36,.5)"; g.font="800 8px 'Helvetica Neue',Arial,sans-serif";
   g.textAlign="left"; g.fillText("#"+num,-r+4,-r+11); g.textAlign="center";
   g.fillStyle="#6B6151"; g.font="800 8.5px 'Helvetica Neue',Arial,sans-serif";
   g.fillText(k.lbl,0,r+15);
   g.restore();
 }
+/* Cuando una fuente se cae, sus hexes NO se quedan con el valor viejo ni con un 0:
+   se marcan CIEGOS. Es la diferencia entre "no hay nada que hacer" y "no estoy viendo". */
+function cegar(tabla, idxs, motivo){
+  idxs.forEach(function(i){
+    const v = tabla[i];
+    if(!v) return;                                  // hueco libre del anillo: se queda libre
+    tabla[i] = { n:"—", lbl:v.lbl, c:"gris", st:"ciego", src:motivo||"la fuente no contestó" };
+  });
+}
+/* Un campo que NO vino no es un cero. */
+function cifra(v){ return (v===null||v===undefined||v==="") ? null : v; }
+
 function hexKPIs(){          // #1..#8 arriba · #9..#16 abajo
   KPIHEX_TOP.forEach((k,i)=>hexTile(200+i*(1136/7),56,k,i+1));
   KPIHEX_BOT.forEach((k,i)=>hexTile(200+i*(1136/7),970,k,i+9));
@@ -1243,10 +1266,14 @@ async function conectarPPP(){
     // los conteos de leads/agendadas los manda el CRM (ya sin pruebas); aquí va el tráfico
     KPIHEX_TOP[6]={n:empez+"/"+visTot, lbl:"EMPIEZAN / VISITAS",
       c:visTot&&empez/visTot>=.4?"verde":(empez?"ambar":"rojo"), st:"linea"};
-    KPIHEX_TOP[7]={n:String(kp.agendadas??0), lbl:"AGENDADAS PPP", c:(kp.agendadas||0)>0?"verde":"ambar", st:"linea"};
+    KPIHEX_TOP[7] = cifra(kp.agendadas)===null
+      ? {n:"—", lbl:"AGENDADAS PPP", c:"gris", st:"ciego", src:"plan-potencial no mandó agendadas"}
+      : {n:String(kp.agendadas), lbl:"AGENDADAS PPP",
+         c:kp.agendadas>0?"verde":"ambar", st:"linea"};
     pintar();
     console.log("✓ PPP en línea · pagados "+pag+" · leads "+kp.leads+" · agendadas "+kp.agendadas);
-  }catch(e){ console.warn("PPP sin línea: quedan los valores impresos", e); }
+  }catch(e){ cegar(KPIHEX_TOP,[1,6,7],"GAS plan-potencial sin respuesta"); pintar();
+     console.warn("PPP sin línea", e); }
 }
 
 /* ═══ TRAMO MIRAMAR · EN LÍNEA · GAS del board Real de Miramar ═══ */
@@ -1287,7 +1314,8 @@ async function conectarMiramar(){
     pintar();
     console.log("✓ Miramar en línea · trámites "+TRAD.apr+"/"+TRAD.tot+
       " · "+TRAD.blq+" bloqueados · apartados "+ap+"/"+lo.length);
-  }catch(e){ console.warn("Miramar sin línea", e); }
+  }catch(e){ cegar(KPIHEX_BOT,[0,1,5],"GAS Real Miramar sin respuesta"); pintar();
+     console.warn("Miramar sin línea", e); }
 }
 
 /* ═══ TRAMO OBRA · EN LÍNEA · el motor de avance con cadena de aprobación ═══
@@ -1350,7 +1378,8 @@ async function conectarObra(){
       " · "+listos+"/"+nombres.length+" frentes listos"+
       (OBRD.pendientes?" · "+OBRD.pendientes+" por verificar":"")+
       (OBRD.porAutorizar?" · "+OBRD.porAutorizar+" por autorizar":""));
-  }catch(e){ console.warn("Obra sin línea", e); }
+  }catch(e){ cegar(KPIHEX_BOT,[7],"motor de obra sin respuesta"); pintar();
+     console.warn("Obra sin línea", e); }
 }
 
 /* ═══ TRAMO ALYSA + MARÍA · EN LÍNEA · hitos de sus tracks (usa la clave del candado) ═══ */
@@ -1370,7 +1399,8 @@ async function conectarTracks(){
     const [a,m]=await Promise.allSettled([uno("alysa",0),uno("maria",2)]);
     pintar();
     console.log("✓ tracks en línea · alysa "+(a.value||"sin línea")+" · maría "+(m.value||"sin línea"));
-  }catch(e){ console.warn("tracks sin línea", e); }
+  }catch(e){ cegar(KPIHEX_BOT,[3],"portero/tracks sin respuesta"); pintar();
+     console.warn("tracks sin línea", e); }
 }
 
 /* ═══ TRAMO TALLER · EN LÍNEA · el board-aurum de Operación (adapter operations) ═══ */
@@ -1394,11 +1424,14 @@ async function conectarTaller(){
   }catch(e){
     try{ const raw=localStorage.getItem("aurum-cache-v5");        // mismo caché que el board-aurum
       const c=raw&&JSON.parse(raw); if(Array.isArray(c)&&c.length){ tasks=c; via="caché del board"; } }catch(_){}
-    if(!tasks){ console.warn("Taller sin línea", e); return; }
+    if(!tasks){ cegar(KPIHEX_BOT,[2],"board-aurum sin respuesta"); pintar();
+      console.warn("Taller sin línea", e); return; }
   }
   TALD=tareasResumen(tasks);
+  const guardado = via.indexOf("cach")>-1;     // ninguna caché guarda su hora: puede ser de semanas
   KPIHEX_BOT[2]={n:TALD.done+"/"+TALD.tot, lbl:"TALLER CERRADAS",
-    c:TALD.blq?"ambar":"verde", st:"linea"};
+    c:TALD.blq?"ambar":"verde", st: guardado?"cache":"linea",
+    src: guardado?"dato guardado, no recién traído":"board-aurum en vivo"};
   pintar();
   console.log("✓ Taller en línea ("+via+") · "+TALD.done+"/"+TALD.tot+" · "+TALD.blq+" bloqueadas");
 }
@@ -1445,14 +1478,18 @@ async function conectarCodes(){
       const data=c&&(c.data||c);
       if(data&&(data.Inversiones||data.inversiones)){ res=sumaInversiones(data); via="caché del portal"; }
     }catch(_){}
-    if(!res||!res.n){ console.warn("Codes sin línea", e); return; }
+    if(!res||!res.n){ cegar(KPIHEX_BOT,[4,6],"portal codesarrolladores sin respuesta"); pintar();
+      console.warn("Codes sin línea", e); return; }
     }
   }
   if(!res||!res.n) return;
   CODM=res.total;
-  KPIHEX_BOT[6]={n:"$"+(res.total/1e6).toFixed(1)+"M", lbl:"CON FOLIO CODES", c:"verde", st:"linea"};
+  const guardadoC = via.indexOf("cach")>-1;
+  const stC = guardadoC?"cache":"linea";
+  const srcC = guardadoC?"dato guardado, no recién traído":("portal codesarrolladores · "+via);
+  KPIHEX_BOT[6]={n:"$"+(res.total/1e6).toFixed(1)+"M", lbl:"CON FOLIO CODES", c:"verde", st:stC, src:srcC};
   if(res.pct!=null) KPIHEX_BOT[4]={n:Math.round(res.pct*100)+"%", lbl:"COBRADO CODES",
-    c:res.pct>=.5?"verde":"rojo", st:"linea"};
+    c:res.pct>=.5?"verde":"rojo", st:stC, src:srcC};
   pintar();
   console.log("✓ Codes en línea ("+via+") · $"+(res.total/1e6).toFixed(1)+"M en "+res.n+" folios");
 }
@@ -1506,20 +1543,31 @@ async function conectarCRM(){
             : r.motivo==="prueba-previa"? "Antes del arranque · no cuenta"
             : "Perdido · reactivable"}));
     const k=j.kpis||{};
-    KPIHEX_TOP[0]={n:String(k.contratosADA??0), lbl:"CONTRATOS A DE A",
-      c:(k.contratosADA||0)>0?"verde":"rojo", st:"linea"};
-    KPIHEX_TOP[2]={n:String(k.total??TOT), lbl:"LEADS EN CRM", c:"azul", st:"linea"};
-    KPIHEX_TOP[3]={n:(k.vanTarde??NBLQ)+"/"+(k.total??TOT), lbl:"SE ENFRÍAN +30d",
-      c:(k.vanTarde||0)>0?"rojo":"verde", st:"linea"};
-    KPIHEX_TOP[4]={n:(k.enJuego||0)>=1e6 ? "$"+(k.enJuego/1e6).toFixed(1)+"M"
-                     : ((k.enJuego||0)>0 ? "$"+Math.round(k.enJuego/1000)+"k" : "$0"),
-      lbl:"EN JUEGO", c:(k.enJuego||0)>0?"azul":"rojo", st:"linea"};
-    KPIHEX_TOP[5]={n:String(k.dormidos??0), lbl:"DORMIDOS +90d",
-      c:(k.dormidos||0)>0?"gris":"verde", st:"linea"};
+    KPIHEX_TOP[0] = cifra(k.contratosADA)===null
+      ? {n:"—", lbl:"CONTRATOS A DE A", c:"gris", st:"ciego", src:"el CRM no mandó contratosADA"}
+      : {n:String(k.contratosADA), lbl:"CONTRATOS A DE A",
+         c:k.contratosADA>0?"verde":"rojo", st:"linea"};
+    KPIHEX_TOP[2] = cifra(k.total)===null
+      ? {n:"—", lbl:"LEADS EN CRM", c:"gris", st:"ciego", src:"el CRM no mandó total"}
+      : {n:String(k.total), lbl:"LEADS EN CRM", c:"azul", st:"linea"};
+    KPIHEX_TOP[3] = (cifra(k.vanTarde)===null || cifra(k.total)===null)
+      ? {n:"—", lbl:"SE ENFRÍAN +30d", c:"gris", st:"ciego", src:"el CRM no mandó vanTarde/total"}
+      : {n:k.vanTarde+"/"+k.total, lbl:"SE ENFRÍAN +30d",
+         c:k.vanTarde>0?"rojo":"verde", st:"linea"};
+    KPIHEX_TOP[4] = cifra(k.enJuego)===null
+      ? {n:"—", lbl:"EN JUEGO", c:"gris", st:"ciego", src:"el CRM no mandó enJuego"}
+      : {n: k.enJuego>=1e6 ? "$"+(k.enJuego/1e6).toFixed(1)+"M"
+           : (k.enJuego>0 ? "$"+Math.round(k.enJuego/1000)+"k" : "$0"),
+         lbl:"EN JUEGO", c:k.enJuego>0?"azul":"rojo", st:"linea"};
+    KPIHEX_TOP[5] = cifra(k.dormidos)===null
+      ? {n:"—", lbl:"DORMIDOS +90d", c:"gris", st:"ciego", src:"el CRM no mandó dormidos"}
+      : {n:String(k.dormidos), lbl:"DORMIDOS +90d",
+         c:k.dormidos>0?"gris":"verde", st:"linea"};
     CRMEST="linea"; pintar();
     console.log("✓ CRM en línea · "+k.total+" leads · "+k.vanTarde+" van tarde · $"+
       ((k.enJuego||0)/1e6).toFixed(2)+"M en juego · "+k.contratosADA+" contratos A de A");
-  }catch(e){ CRMEST="caido"; pintar(); console.warn("CRM sin línea", e); }
+  }catch(e){ CRMEST="caido"; cegar(KPIHEX_TOP,[0,2,3,4,5],"GAS del CRM sin respuesta"); pintar();
+     console.warn("CRM sin línea", e); }
 }
 
 /* ═══ SONDA finance · solo reporta la forma del dato, no pinta nada ═══ */
