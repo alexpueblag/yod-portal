@@ -165,6 +165,7 @@ function rayosX(){                           // la pieza se vuelve vidrio justo 
 }
 function canica(x,y,c,n,dat){
   if(dat||n) HIT.push({x:P(x,y)[0],y:P(x,y)[1],r:RM*sx(y)*(n?1.5:1.25),d:dat,n:n,col:COL[c][0]});
+  if(dat&&dat.id!=null) POSCANICA[dat.id]={x:P(x,y)[0],y:P(x,y)[1],r:RM*sx(y)};
   const [px,py]=P(x,y), s=sx(y), r=RM*s, [c0,c1]=COL[c];
   g.save(); g.translate(px,py);
   g.save(); g.scale(1,0.92);
@@ -486,11 +487,18 @@ function origenes(){
   ORIG.forEach(o=>torre(o.x,TY+62,116,132,o.ic,M.tinta));
 }
 
+/* ═══ UMBRALES · uno solo, el del motor. ═══════════════════════════════════
+   Antes convivían TRES juegos que no coincidían: el comentario decía 7/21, el
+   código usaba 15/30, y la leyenda dibujada decía 30/90. El motor del CRM solo
+   conoce dos: ALARMA_DIAS=30 (se enfría) y CORTE_DIAS=90 (se archiva).
+   Todo el tablero se cuelga de esos dos y de su punto medio. */
+const DIA_ALARMA=30, DIA_CORTE=90, DIA_GRAVE=(DIA_ALARMA+DIA_CORTE)/2;   // 30 · 60 · 90
+
 /* ═══ 5 · CRM · CUATRO FILTROS ═══════════════════════════════════════════
    Tres canales que no se pisan:
      color   = de qué embudo salió el lead   (nuevo)
      lugar   = en qué filtro está parado     (antes lo decía el color)
-     aro     = si ya se tardó · ámbar 7 días · rojo 21   (así se salva el rojo)
+     luz     = cuánto lleva parado · empieza a los 30 d y se acelera hasta los 90
    Dos tratamientos de la MISMA charola. El selector de arriba cambia entre ellos.
    ════════════════════════════════════════════════════════════════════════ */
 const FIL=[["CONTACTABLE",18],["CALIFICADO",34],["PROPUESTA",21],["NEGOCIACIÓN",11]];
@@ -520,11 +528,30 @@ function setLeadsCRM(matriz){
 const FOCOS=[];
 function prender(x,y,k,dias,ph){
   const [px,py]=P(x,y);
+  // 5 s justo al enfriarse (30 d) → 2 s al borde del archivo (90 d). Acotado a la
+  // fuerza: sin el clamp, un lead de pocos días daba periodos de 6.6 s, fuera del
+  // rango que promete la leyenda.
+  const avance = Math.min(1, Math.max(0, (dias-DIA_ALARMA)/(DIA_CORTE-DIA_ALARMA)));
   FOCOS.push({px, py, r:RM*sx(y), c:COL[k][1], dias,
-              per: 5.0 - Math.min(1,(dias-31)/59)*3.0,    // 5 s al enfriarse → 2 s al borde del archivo
+              per: 5.0 - avance*3.0,
               ph});
 }
 function cantoPlano(){}
+/* Registra una canica pintada y decide qué luz le toca.
+   ANTES: RECIEN se filtraba de FOCOS, y en FOCOS solo entran los que YA se
+   enfriaron (>=30 d). Un recién llegado nunca estaba ahí, así que el anillo de
+   "acaba de entrar" era inalcanzable — solo parecía funcionar por el fallback
+   que se lo ponía a los más viejos, diciendo lo contrario. Ahora son dos listas
+   independientes, cada una con su propio criterio. */
+const NUEVOS=[];
+function registrar(x,y,k,L){
+  if(!L || L.dias==null) return;
+  if(L.dias>=DIA_ALARMA) prender(x,y,k,L.dias,L.ph);
+  else if(L.dias<=DIA_RECIEN){
+    const [px,py]=P(x,y);
+    NUEVOS.push({px,py,r:RM*sx(y),c:COL[k][1],dias:L.dias});
+  }
+}
 function cuenta(x,y,k,dat){
   const [px,py]=P(x,y), s=sx(y), r=RM*s, [c0,c1]=COL[k];
   if(dat) HIT.push({x:px,y:py,r:r,d:dat,n:0,col:COL[k][0]});
@@ -555,6 +582,8 @@ function bandeja(){                        // la charola de siempre, intacta
 
 function placaCRM(){
   const {x,y,h}=CRM, w=360, py=y+h/2+16, ph=64; tapa(x-w/2,py,w,ph);
+  if(MOVIDOS) txt("↓ "+MOVIDOS+(MOVIDOS===1?" se movió":" se movieron")+" desde que no mirabas",
+                  x, py-9, 11.5, M.verde, 800);
   if(!TOT){
     quad(x-w/2+4,py+5,w,ph,"rgba(80,66,42,.22)");
     quad(x-w/2,py,w,ph,M.hueso,"rgba(90,76,48,.45)",1.6);
@@ -572,6 +601,9 @@ function placaCRM(){
   quad(x-w/2,py,w,7,M.huesoS);
   const CNT=[0,1,2,3].map(j=>REP.reduce((a,f)=>a+f[j],0));   // conteo VIVO por filtro
   txt("CRM YOD · "+TOT+" LEADS",x,py+17,19,M.tinta,800);
+  // El aviso va ARRIBA de la placa, en el hueco entre la charola y ella.
+  // Abajo no cabe: en py+ph+28 vive "se enfrían · en juego", y de py+ph+44 en
+  // adelante lo tapa el panel de trámites, que se dibuja después.
   txt(CNT.join(" · "),x,py+38,24,M.tinta,800);
   const bw=w-38, bx=x-bw/2, by=py+50, TON=["#B7CBDE","#2F5F92","#5E8DB8","#17364F"];
   quad(bx,by,bw,9,"#CFC3A6");
@@ -625,7 +657,7 @@ function crmSurcos(){
   mont.forEach(([cx,cy,k,L,nn])=>{ canica(cx,cy,k,nn,L);
     if(nn){ const tarde=L.grupo.filter(g=>g.st==="rojo");
       if(tarde.length) prender(cx,cy,k,Math.max(...tarde.map(g=>g.dias)),0.31); }
-    else if(L.st==="rojo") prender(cx,cy,k,L.dias,L.ph); });
+    else registrar(cx,cy,k,L); });
   placaCRM();
 }
 
@@ -672,7 +704,7 @@ function crmAbaco(){
       for(let m=0;m<ns;m++){
         const cx=c0+m*p, L=LEADS[i][j][m];
         cuenta(cx,yr,k,L);
-        if(L.st==="rojo") prender(cx,yr,k,L.dias,L.ph);
+        registrar(cx,yr,k,L);
       }
       if(n>cap){
         const resto=LEADS[i][j].slice(ns);
@@ -960,7 +992,7 @@ function bordes(){
   canica(62,ly+196,"ppp"); prender(62,ly+196,"ppp",30,0.15);
   txt("parpadea = se enfría",92,ly+189,10,M.tinta2,700,"left");
   txt("5 s a los 30 d · 2 s a los 90 d",92,ly+202,9.5,M.tinta,700,"left");
-  txt("un anillo = acaba de entrar",92,ly+214,9.5,M.tinta2,700,"left");
+  txt("anillo = entró hace 7 d o menos",92,ly+214,9.5,M.tinta2,700,"left");
 }
 
 /* ═══ 10 · CANICAS DEL CICLO ═══ */
@@ -1111,7 +1143,7 @@ function mar(){
 
 /* ═══ DIBUJO · de lejos a cerca ═══ */
 function pintar(){
-  HIT.length=0; FOCOS.length=0; TAPAS.length=0;
+  HIT.length=0; FOCOS.length=0; NUEVOS.length=0; TAPAS.length=0;
   g.fillStyle="#FFFFFF"; g.fillRect(0,0,W,H);
   tablero();
   caminos();
@@ -1193,12 +1225,66 @@ CV.addEventListener("click",ev=>{
   F.style.left=Math.min(CV.offsetLeft+b.width-250,Math.max(6,fx))+"px";
   F.style.top=Math.min(CV.offsetTop+b.height-190,Math.max(6,fy))+"px";
 });
+
+/* ═══ LA BAJADA · lo único que se mueve de verdad ══════════════════════════
+   Hasta hoy las canicas simplemente APARECÍAN en su carril: no se veía nada
+   bajar, y por eso "el flujo" era una idea, no una imagen. Ahora el tablero
+   recuerda en qué carril viste cada lead la última vez (localStorage) y, al
+   abrir, hace BAJAR por el camino a los que se movieron o son nuevos.
+   Es memoria, no adorno: contesta "qué cambió desde que no miro".
+   ══════════════════════════════════════════════════════════════════════════ */
+const MEM_CARRIL="yod_carril_v1";
+let BAJAN=[], MOVIDOS=0;
+function carrilesPrevios(){
+  try{ return JSON.parse(localStorage.getItem(MEM_CARRIL)||"{}"); }catch(e){ return {}; }
+}
+function guardarCarriles(m){
+  try{ localStorage.setItem(MEM_CARRIL, JSON.stringify(m)); }catch(e){}
+}
+/* Arma las bajadas comparando contra lo último que se vio. Se llama DESPUÉS de
+   pintar, cuando ya hay coordenadas reales de cada canica. */
+function prepararBajadas(){
+  const prev=carrilesPrevios(), ahora={};
+  BAJAN=[]; MOVIDOS=0;
+  const nuevas=[];
+  LEADS.forEach((fila,i)=>fila.forEach((celda,j)=>celda.forEach(L=>{
+    if(!L||L.id==null) return;
+    ahora[L.id]=j;
+    const antes=prev[L.id];
+    if(antes===undefined || antes!==j) nuevas.push({L,i,j,esNuevo:antes===undefined});
+  })));
+  MOVIDOS=nuevas.length;
+  guardarCarriles(ahora);
+  if(!nuevas.length || QUIETO) return;
+  // el origen es la boca del camino de su embudo; el destino, su canica ya pintada
+  nuevas.slice(0,24).forEach((n,idx)=>{                    // tope: no convertirlo en lluvia
+    const destino=POSCANICA[n.L.id];
+    if(!destino) return;
+    const o=ORIG[n.i]||ORIG[0];
+    const [ox,oy]=P(o.x, PLY+90);
+    BAJAN.push({ x0:ox, y0:oy, x1:destino.x, y1:destino.y, r:destino.r,
+                 c:COL[(n.L.emb||"ada").toLowerCase()] ? COL[n.L.emb.toLowerCase()][1] : COL.azul[1],
+                 t0:idx*0.14, dur:1.15, nuevo:n.esNuevo });
+  });
+}
+/* dónde quedó pintada cada canica · lo llena canica() en cada repintado */
+const POSCANICA={};
+
 /* ═══ EL BUCLE DE LUZ ═══ */
 const LZ=document.getElementById("luz"), LG=LZ.getContext("2d");
 const QUIETO=matchMedia("(prefers-reduced-motion: reduce)").matches;
 const rgba=(hex,a)=>{const v=parseInt(hex.slice(1),16);
   return "rgba("+(v>>16&255)+","+(v>>8&255)+","+(v&255)+","+a.toFixed(3)+")";};
 let t0=null, pingI=0, pingT=0, RECIEN=[];
+/* El anillo significa UNA cosa: acaba de entrar. Antes, si no había ninguno
+   recién entrado, el código se lo ponía a TODOS (RECIEN=FOCOS.slice()) — o sea
+   se lo ponía justamente a los más viejos, diciendo lo contrario de lo que
+   significa. Ahora: si no hay recién llegados, no hay anillo. Punto. */
+const DIA_RECIEN=7;
+function recalcularRecien(){
+  RECIEN = NUEVOS.slice().sort((a,b)=>a.dias-b.dias);
+  pingT=-9; pingI=0;
+}
 function halo(f,a){
   const R=f.r*2.5;
   const gr=LG.createRadialGradient(f.px,f.py,f.r*0.12,f.px,f.py,R);
@@ -1212,6 +1298,12 @@ function halo(f,a){
 }
 function luces(ts){
   requestAnimationFrame(luces);
+  // sin focos, sin anillos, con la pestaña oculta o con movimiento reducido:
+  // no hay nada que dibujar y no tiene caso gastar batería cuadro tras cuadro.
+  if(document.hidden || (!FOCOS.length && !RECIEN.length && !BAJAN.length)){
+    if(LZ.width) LG.clearRect(0,0,LZ.width,LZ.height);
+    return;
+  }
   if(t0===null) t0=ts;
   const t=(ts-t0)/1000;
   LG.clearRect(0,0,LZ.width,LZ.height);
@@ -1223,13 +1315,36 @@ function luces(ts){
   });
   if(!QUIETO && RECIEN.length){                // el que acaba de entrar, cada 2.5 s
     if(t-pingT>=2.5){ pingT=t; pingI=(pingI+1)%RECIEN.length; }
+    if(pingI>=RECIEN.length) pingI=0;          // la lista pudo encoger entre cuadros
     const f=RECIEN[pingI], k=(t-pingT)/1.1;
-    if(k<1){
+    if(f && k<1){
       LG.strokeStyle=rgba(f.c,(1-k)*0.85);
       LG.lineWidth=(3.2*(1-k)+0.9)*(f.r/13);
       LG.beginPath(); LG.arc(f.px,f.py,f.r*(1+k*4.6),0,7); LG.stroke();
       halo(f,(1-k)*0.5);
     }
+  }
+  // ── las que bajan ──
+  if(BAJAN.length){
+    let vivas=0;
+    BAJAN.forEach(b=>{
+      const k=(t-b.t0)/b.dur;
+      if(k<0){ vivas++; return; }
+      if(k>=1) return;
+      vivas++;
+      const e=1-Math.pow(1-k,3);                       // frena al llegar
+      const x=b.x0+(b.x1-b.x0)*e, y=b.y0+(b.y1-b.y0)*e;
+      LG.fillStyle=rgba(b.c,0.30*(1-k)+0.22);          // estela
+      LG.beginPath(); LG.arc(x,y,b.r*(1.5-k*0.5),0,7); LG.fill();
+      LG.fillStyle=rgba(b.c,0.95);
+      LG.beginPath(); LG.arc(x,y,b.r*0.72,0,7); LG.fill();
+      if(k>0.86){                                      // golpe seco al aterrizar
+        const g=(k-0.86)/0.14;
+        LG.strokeStyle=rgba(b.c,(1-g)*0.9); LG.lineWidth=2.2*(1-g)+0.6;
+        LG.beginPath(); LG.arc(b.x1,b.y1,b.r*(1+g*2.4),0,7); LG.stroke();
+      }
+    });
+    if(!vivas) BAJAN=[];
   }
   LG.globalCompositeOperation="source-over";
 }
@@ -1242,9 +1357,7 @@ function ver(v){
   BT.forEach(b=>b.classList.toggle("on",b.dataset.v===v));
   F.style.display="none";
   pintar();
-  RECIEN=FOCOS.filter(f=>f.dias<=27).sort((a,b)=>a.dias-b.dias);
-  if(!RECIEN.length) RECIEN=FOCOS.slice();
-  pingT=-9; pingI=-1;
+  recalcularRecien();
   console.log("✓ CRM · "+v+" · "+HIT.length+" clicables · "+FOCOS.length+" focos · "+RECIEN.length+" recién entrados");
 }
 BT.forEach(b=>b.addEventListener("click",()=>ver(b.dataset.v)));
@@ -1500,7 +1613,8 @@ function leadVivo(r){
   const dias=r.dias==null?0:r.dias;
   const h=[...String(r.id)].reduce((a,c)=>(a*31+c.charCodeAt(0))>>>0,7);
   return { id:r.id, nodo:"CRM",
-    st: r.dias==null ? "azul" : (dias>30?"rojo":(dias>15?"ambar":"azul")),
+    st: r.dias==null ? "azul"
+        : (dias>=DIA_GRAVE ? "rojo" : (dias>=DIA_ALARMA ? "ambar" : "azul")),
     dias:r.dias, zona:r.origen||"—", tipo:r.proyecto||r.nombre||"—",
     resp:r.resp||"—", valor:r.valor||null, ph:(h%997)/997,
     emb:r.emb, origen:{ADA:"A DE A",PPP:"PPP",OBR:"OBRA",LOT:"LOTES",CDS:"CODES."}[r.emb]||r.emb,
@@ -1564,6 +1678,10 @@ async function conectarCRM(){
       : {n:String(k.dormidos), lbl:"DORMIDOS +90d",
          c:k.dormidos>0?"gris":"verde", st:"linea"};
     CRMEST="linea"; pintar();
+    recalcularRecien();
+    prepararBajadas();          // usa las coordenadas que dejó el pintado anterior
+    if(MOVIDOS){ pintar();      // …y hay que repintar para que el aviso salga en la charola
+      console.log("↓ "+MOVIDOS+" canicas se movieron desde tu última visita"); }
     console.log("✓ CRM en línea · "+k.total+" leads · "+k.vanTarde+" van tarde · $"+
       ((k.enJuego||0)/1e6).toFixed(2)+"M en juego · "+k.contratosADA+" contratos A de A");
   }catch(e){ CRMEST="caido"; cegar(KPIHEX_TOP,[0,2,3,4,5],"GAS del CRM sin respuesta"); pintar();
