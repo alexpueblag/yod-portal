@@ -1404,18 +1404,32 @@ function sumaInversiones(data){
 }
 async function conectarCodes(){
   let res=null, via="live";
+  // 1º el AGREGADO PÚBLICO: cuatro números, sin credencial. El portal de
+  // codesarrolladores tiene su propia ADMIN_PASS y no se pone en un HTML público
+  // (daría acceso de escritura a todo). Ver PARCHE-CODES.md.
   try{
+    const r=await fetch(CODES_GAS,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},
+      body:JSON.stringify({action:"resumenPublico"}),redirect:"follow",cache:"no-store"});
+    const j=await r.json();
+    if(j&&j.ok&&j.total!=null){ res={total:j.total,n:j.n,recibido:j.recibido,pct:j.pct}; via="agregado público"; }
+  }catch(_){}
+  // 2º mientras el parche no esté pegado, el camino de antes
+  try{
+    if(res&&res.n) throw "listo";
     const r=await fetch(CODES_GAS,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},
       body:JSON.stringify({action:"getAll",pass:CLAVE_OK||""}),redirect:"follow",cache:"no-store"});
     const j=await r.json();
     if(j&&j.ok&&j.data) res=sumaInversiones(j.data); else throw (j&&j.error)||0;
   }catch(e){
+    if(e==="listo"){ /* ya lo trajo el agregado público */ }
+    else{
     try{ const raw=localStorage.getItem("codeyod-cache-v1");     // mismo origen que el portal
       const c=raw&&JSON.parse(raw);
       const data=c&&(c.data||c);
       if(data&&(data.Inversiones||data.inversiones)){ res=sumaInversiones(data); via="caché del portal"; }
     }catch(_){}
     if(!res||!res.n){ console.warn("Codes sin línea", e); return; }
+    }
   }
   if(!res||!res.n) return;
   CODM=res.total;
