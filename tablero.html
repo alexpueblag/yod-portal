@@ -560,9 +560,10 @@ function placaCRM(){
     quad(x-w/2,py,w,ph,M.hueso,"rgba(90,76,48,.45)",1.6);
     quad(x-w/2,py,w,7,M.huesoS);
     txt("CRM YOD",x,py+17,19,M.tinta,800);
-    txt("—",x,py+40,24,M.tinta,800);
+    txt(CRMEST==="linea" ? "0" : "—",x,py+40,24,M.tinta,800);
     txt(CRMEST==="pidiendo" ? "consultando el CRM… tarda unos segundos"
-                            : "sin línea · revisar el endpoint del CRM",
+      : CRMEST==="linea"    ? "en línea · todavía no entra ningún lead"
+      :                       "sin línea · revisar el endpoint del CRM",
         x,py+ph+14,12,M.tinta2,600);
     return;
   }
@@ -595,7 +596,8 @@ function crmSurcos(){
   const {x,y,w,h}=CRM, x0=x-w/2, lw=w/4;
   FIL.forEach(([nom,tot],j)=>txt(nom,x0+lw*(j+0.5),y-h/2+5.5,9,"rgba(228,240,252,.9)",800));
   if(!TOT) txt(CRMEST==="pidiendo" ? "consultando el CRM…"
-                                  : "aquí caerán los leads cuando el CRM esté en línea",
+      : CRMEST==="linea"             ? "el CRM está en línea · aquí caerá el primer lead que entre"
+      :                                "aquí caerán los leads cuando el CRM esté en línea",
                x,y+6,11,"rgba(228,240,252,.55)",700);
   for(let j=1;j<4;j++){                              // el troquel
     const gx=x0+j*lw;
