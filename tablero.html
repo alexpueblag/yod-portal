@@ -1253,7 +1253,10 @@ async function conectarPPP(){
 const MIRA_GAS="https://script.google.com/macros/s/AKfycbzR0-hoPMs7N_1nSD0pFbJtTmaN4kLCIbNFsYw7VeM3xnfu12TSKJSkMyNxm7KNn7o/exec";
 async function conectarMiramar(){
   try{
-    const r=await fetch(MIRA_GAS+"?recurso=board&cb="+Date.now(),{cache:"no-store"});
+    // Manda la credencial como el resto de conectores: el backend de Miramar
+    // ya la exige (antes servia el board completo sin clave a cualquiera).
+    const r=await fetch(MIRA_GAS+"?recurso=board&k="+encodeURIComponent(CLAVE_OK||"")+
+      "&cb="+Date.now(),{cache:"no-store"});
     const j=await r.json(); if(!j.ok||!j.tablas) throw 0;
     const tr=j.tablas.TRAMITES||[], lo=j.tablas.LOTES||[];
     const est=e=>String(e.estado||"").trim().toLowerCase();
