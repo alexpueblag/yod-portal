@@ -290,17 +290,120 @@ async function anotar(op){
   };
 }
 
+/* ═══ SEÑALAR · para las pantallas que no son lienzo ═══
+   En el tablero se pica una canica y ya se sabe qué señaló. En obra.html y en
+   YOD OS no hay canicas: hay filas, tarjetas y botones. Este modo deja tocar
+   cualquier cosa de la pantalla y se queda con lo que ESA cosa dice —no con
+   una foto—, porque para un renglón de catálogo el texto exacto vale más que
+   un pixelazo, y porque serializar el HTML a imagen falla en silencio. */
+var senalando = null;
+function ruta(el){
+  var p = [], n = el, saltos = 0;
+  while (n && n.nodeType === 1 && saltos < 3) {
+    var t = n.tagName.toLowerCase();
+    if (n.id) { p.unshift(t + "#" + n.id); break; }
+    var cl = (n.className && typeof n.className === "string")
+      ? "." + n.className.trim().split(/\s+/).slice(0, 2).join(".") : "";
+    p.unshift(t + cl); n = n.parentElement; saltos++;
+  }
+  return p.join(" ");
+}
+function seccionDe(el){
+  var n = el;
+  while (n && n !== document.body) {
+    var h = n.querySelector && n.querySelector("h1,h2,h3,h4,[data-seccion]");
+    if (h && legible(h)) return legible(h).slice(0, 80);
+    n = n.parentElement;
+  }
+  var t = document.querySelector("h1,h2");
+  return t ? legible(t).slice(0, 80) : "";
+}
+/* lo que estaba escrito adentro: pares etiqueta→valor si los hay, si no las
+   primeras celdas. Sirve para reconocer el renglón aunque cambie de lugar. */
+/* innerText y no textContent: textContent pega los hijos sin respirar y
+   entrega "Pinturano empieza0.0%" en vez de "Pintura no empieza 0.0%" */
+function legible(el){
+  var t = (el.innerText != null ? el.innerText : el.textContent) || "";
+  return t.replace(/\s+/g, " ").trim();
+}
+function valoresDe(el){
+  var v = {}, n = 0;
+  el.querySelectorAll("th,td,dt,dd,label,[data-k],[data-v]").forEach(function (c) {
+    if (n >= 6) return;
+    var t = legible(c);
+    if (!t || t.length > 80) return;
+    v["c" + (++n)] = t;
+  });
+  if (!n) {
+    var t = legible(el);
+    if (t) v.c1 = t.slice(0, 120);
+  }
+  return v;
+}
+function modoSenalar(){
+  if (senalando) return;
+  var marco = document.createElement("div");
+  marco.className = "chn-marco";
+  var pista = document.createElement("div");
+  pista.className = "chn-pista";
+  pista.textContent = "Toca lo que quieres cambiar · Esc para salir";
+  document.body.appendChild(marco); document.body.appendChild(pista);
+
+  function bajo(ev){
+    var t = ev.touches && ev.touches[0];
+    return document.elementFromPoint(t ? t.clientX : ev.clientX, t ? t.clientY : ev.clientY);
+  }
+  function mover(ev){
+    var el = bajo(ev);
+    if (!el || el === marco || el === pista) return;
+    var r = el.getBoundingClientRect();
+    marco.style.cssText += ";top:" + r.top + "px;left:" + r.left + "px;width:" +
+      r.width + "px;height:" + r.height + "px";
+    marco._el = el;
+  }
+  function tomar(ev){
+    var el = bajo(ev) ;
+    if (!el || el === marco || el === pista) el = marco._el;
+    if (!el) return;
+    ev.preventDefault(); ev.stopPropagation();   /* que no dispare lo de la página */
+    salir();
+    anotar({ css: ruta(el), texto: legible(el).slice(0, 160),
+             seccion: seccionDe(el), valores: valoresDe(el), clase: el.tagName.toLowerCase() });
+  }
+  function tecla(ev){ if (ev.key === "Escape") salir(); }
+  function salir(){
+    senalando = null;
+    document.removeEventListener("mousemove", mover, true);
+    document.removeEventListener("touchmove", mover, true);
+    document.removeEventListener("click", tomar, true);
+    document.removeEventListener("touchend", tomar, true);
+    document.removeEventListener("keydown", tecla, true);
+    marco.remove(); pista.remove();
+  }
+  senalando = salir;
+  document.addEventListener("mousemove", mover, true);
+  document.addEventListener("touchmove", mover, true);
+  document.addEventListener("click", tomar, true);
+  document.addEventListener("touchend", tomar, true);
+  document.addEventListener("keydown", tecla, true);
+}
+
 /* ═══════════════════════ LA PILA ═══════════════════════ */
 async function pila(){
   var list = await todas();
   var vivas = list.filter(function(c){ return c.estado !== "mandada"; });
   var idas  = list.filter(function(c){ return c.estado === "mandada"; });
-  if (!vivas.length && !idas.length) return anotar({});
+  if (!vivas.length && !idas.length) {
+    /* sin lienzo no hay nada que fotografiar todavía: primero se señala */
+    if (!CTX.canvas) return modoSenalar();
+    return anotar({});
+  }
 
   var v = hoja('<div class="chn-cab"><b>' + vivas.length + '</b> ' +
       (vivas.length === 1 ? "chinche" : "chinches") +
       (idas.length ? ' <span class="chn-gris">· ' + idas.length + " ya mandadas</span>" : "") +
       '<button type="button" class="chn-todos" data-todos>Todos</button></div>' +
+    '<button type="button" class="chn-senalar" data-senalar>&#9998; Señalar algo de esta pantalla</button>' +
     '<div class="chn-lista" data-lista></div>' +
     '<div class="chn-amarre"><input type="text" data-amarre placeholder="¿Algo que amarre a todos? (opcional)"></div>' +
     '<div class="chn-pie"><button type="button" class="chn-btn2" data-x>Cerrar</button>' +
@@ -345,6 +448,10 @@ async function pila(){
     [].forEach.call(cs, function (x) { x.checked = alguno; });
   };
   v.querySelector("[data-x]").onclick = function(){ cerrar(v); };
+  v.querySelector("[data-senalar]").onclick = function () {
+    /* en el tablero ya se señala picando la canica; aquí es para todo lo demás */
+    cerrar(v); setTimeout(modoSenalar, 220);
+  };
   v.querySelector("[data-pedir]").onclick = async function () {
     var ids = [].filter.call(cont.querySelectorAll("[data-sel]"), function(x){ return x.checked; })
                  .map(function(x){ return x.dataset.sel; });
@@ -557,7 +664,8 @@ async function marcarIdas(ids){
 function estilo(){
   var s = document.createElement("style");
   s.textContent = [
-".chn-pastilla{position:fixed;right:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:8;",
+/* 68: encima de porteros y paneles (obra.html tapa a z:50), debajo del velo (70) */
+".chn-pastilla{position:fixed;right:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:68;",
 " min-width:44px;height:44px;padding:0 12px;border-radius:22px;border:1px solid rgba(46,36,18,.35);",
 " background:rgba(241,228,196,.82);color:#2E2A22;font:800 14px/44px 'Helvetica Neue',Arial,sans-serif;",
 " text-align:center;cursor:pointer;backdrop-filter:blur(6px);box-shadow:0 3px 14px rgba(0,0,0,.22);",
@@ -570,6 +678,15 @@ function estilo(){
 " calc(18px + env(safe-area-inset-bottom,0px));overflow:auto;transition:transform .18s;",
 " font-family:'Helvetica Neue',Arial,sans-serif;color:#2E2A22}",
 ".chn-velo:not(.on) .chn-hoja{transform:translateY(14px)}",
+".chn-marco{position:fixed;z-index:69;pointer-events:none;border:2px solid #D93A34;",
+" background:rgba(217,58,52,.12);border-radius:4px;transition:top .06s,left .06s,width .06s,height .06s}",
+".chn-pista{position:fixed;z-index:71;left:50%;transform:translateX(-50%);bottom:22px;",
+" background:#2E2A22;color:#F6F1E4;font:600 13px/1 'Helvetica Neue',Arial;padding:10px 16px;",
+" border-radius:999px;pointer-events:none;box-shadow:0 6px 18px rgba(0,0,0,.3)}",
+".chn-senalar{display:block;width:100%;margin:0 0 12px;padding:11px;background:#EFE7D4;",
+" border:1px dashed #8B7A57;border-radius:9px;color:#5A4C30;cursor:pointer;",
+" font:700 14px/1 'Helvetica Neue',Arial}",
+".chn-senalar:hover{background:#E7DCC2}",
 ".chn-tit{font:700 19px/1.25 'Helvetica Neue',Arial;margin:0 0 12px}",
 ".chn-nota{font-size:14px;color:#6B6151;margin:0 0 12px}",
 ".chn-foto{width:100%;border-radius:8px;border:1px solid rgba(90,76,48,.4);display:block;margin-bottom:12px}",
@@ -634,5 +751,5 @@ function init(op){
   abrirBD().then(async function(){ guardarN((await pendientes()).length); pintarPastilla(); }).catch(function(){});
 }
 
-window.YODChinche = { init: init, anotar: anotar, pila: pila, cuantas: leerN };
+window.YODChinche = { init: init, anotar: anotar, pila: pila, senalar: modoSenalar, cuantas: leerN };
 })();
