@@ -315,6 +315,7 @@ let TRAD=null;                        // trámites de Miramar, EN LÍNEA
 let TALD=null;                        // tareas del board-aurum (Taller), EN LÍNEA
 let CODM=null;                        // $ con folio del portal Co-desarrolladores
 let ARCD=null;                        // perdidos reales del CRM (archivo)
+let CRMEST="pidiendo";                // pidiendo | linea | caido — el CRM tarda ~23 s en responder
 let APSET=new Set();                  // lotes apartados pintados en la planta
 
 /* ═══ 1 · TABLERO ═══ */
@@ -560,7 +561,9 @@ function placaCRM(){
     quad(x-w/2,py,w,7,M.huesoS);
     txt("CRM YOD",x,py+17,19,M.tinta,800);
     txt("—",x,py+40,24,M.tinta,800);
-    txt("sin línea · conectar Sheet CRM - YOD",x,py+ph+14,12,M.tinta2,600);
+    txt(CRMEST==="pidiendo" ? "consultando el CRM… tarda unos segundos"
+                            : "sin línea · revisar el endpoint del CRM",
+        x,py+ph+14,12,M.tinta2,600);
     return;
   }
   quad(x-w/2+4,py+5,w,ph,"rgba(80,66,42,.22)");
@@ -591,7 +594,9 @@ function crmSurcos(){
   bandeja();
   const {x,y,w,h}=CRM, x0=x-w/2, lw=w/4;
   FIL.forEach(([nom,tot],j)=>txt(nom,x0+lw*(j+0.5),y-h/2+5.5,9,"rgba(228,240,252,.9)",800));
-  if(!TOT) txt("aquí caerán los leads cuando el CRM esté en línea",x,y+6,11,"rgba(228,240,252,.55)",700);
+  if(!TOT) txt(CRMEST==="pidiendo" ? "consultando el CRM…"
+                                  : "aquí caerán los leads cuando el CRM esté en línea",
+               x,y+6,11,"rgba(228,240,252,.55)",700);
   for(let j=1;j<4;j++){                              // el troquel
     const gx=x0+j*lw;
     quad(gx-3,y-h/2+10,6,h-10,"rgba(9,24,42,.9)");
@@ -1434,7 +1439,8 @@ function leadVivo(r){
     filtro:r.filtro, accion:r.tarea||"Dar seguimiento", nombre:r.nombre };
 }
 async function conectarCRM(){
-  if(!CRM_GAS) return;                               // sin endpoint aún: charola sin línea
+  if(!CRM_GAS){ CRMEST="caido"; return; }
+  CRMEST="pidiendo"; pintar();                               // sin endpoint aún: charola sin línea
   try{
     const r=await fetch(CRM_GAS+"?recurso=crm&k="+encodeURIComponent(CLAVE_OK||"")+
       "&t="+Date.now(),{cache:"no-store"});
@@ -1479,10 +1485,10 @@ async function conectarCRM(){
       lbl:"EN JUEGO", c:(k.enJuego||0)>0?"azul":"rojo", st:"linea"};
     KPIHEX_TOP[5]={n:String(k.dormidos??0), lbl:"DORMIDOS +90d",
       c:(k.dormidos||0)>0?"gris":"verde", st:"linea"};
-    pintar();
+    CRMEST="linea"; pintar();
     console.log("✓ CRM en línea · "+k.total+" leads · "+k.vanTarde+" van tarde · $"+
       ((k.enJuego||0)/1e6).toFixed(2)+"M en juego · "+k.contratosADA+" contratos A de A");
-  }catch(e){ console.warn("CRM sin línea", e); }
+  }catch(e){ CRMEST="caido"; pintar(); console.warn("CRM sin línea", e); }
 }
 
 /* ═══ SONDA finance · solo reporta la forma del dato, no pinta nada ═══ */
