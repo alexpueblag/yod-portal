@@ -85,6 +85,23 @@ textarea{width:100%;padding:.55rem .65rem;background:var(--panel2);border:1px so
 
 .vacio{color:var(--muted);font-size:.9rem;padding:1.6rem 0;text-align:center}
 .nota{color:var(--muted);font-size:.85rem;margin:.4rem 0 0}
+/* ── qué nos frena ── */
+.nota-mal{color:var(--bad);font-size:.82rem;margin:.5rem 0 0;line-height:1.5}
+.sec{font-family:var(--mono);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;
+     color:var(--dim);margin:1.4rem 0 .6rem;font-weight:600}
+.chk{display:flex;align-items:center;gap:.5rem;padding:.4rem 0;font-size:.88rem;cursor:pointer}
+.chk input{width:16px;height:16px;accent-color:var(--gold);cursor:pointer}
+.fila-freno{margin-bottom:.5rem}
+.fr-top{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:.35rem}
+.fr-meta{color:var(--muted);font-size:.8rem;line-height:1.5}
+.mal{color:var(--bad)}
+.lib{padding:.5rem .7rem;border-left:2px solid var(--line);margin-bottom:.3rem;font-size:.86rem}
+.lib.ok{border-left-color:var(--ok)}
+.lib.mal{border-left-color:var(--bad)}
+#pProduccion input[type=text],#pProduccion input[type=date]{width:100%;background:var(--panel);
+  border:1px solid var(--line);border-radius:2px;color:var(--fg);padding:.55rem .7rem;
+  font:inherit;font-size:.9rem;margin-bottom:.5rem}
+#pProduccion input[type=date]{width:auto}
 .cadena{font-family:var(--mono);font-size:.68rem;letter-spacing:.05em;color:var(--dim);margin-top:1.6rem;padding-top:1rem;border-top:1px solid var(--line)}
 :focus-visible{outline:2px solid var(--gold);outline-offset:2px}
 </style>
@@ -116,6 +133,7 @@ textarea{width:100%;padding:.55rem .65rem;background:var(--panel2);border:1px so
   <nav role="tablist">
     <button id="tEstado" role="tab" aria-selected="true" aria-controls="pEstado">Estado</button>
     <button id="tCapturar" role="tab" aria-selected="false" aria-controls="pCapturar">Capturar avance</button>
+    <button id="tProduccion" role="tab" aria-selected="false" aria-controls="pProduccion">Qué nos frena<span class="b" id="badgeFreno" hidden>0</span></button>
     <button id="tBandeja" role="tab" aria-selected="false" aria-controls="pBandeja">Mi bandeja<span class="b" id="badge" hidden>0</span></button>
   </nav>
 
@@ -140,6 +158,41 @@ textarea{width:100%;padding:.55rem .65rem;background:var(--panel2);border:1px so
     </div>
   </div>
 
+  <div class="pane" id="pProduccion" role="tabpanel" hidden>
+    <p class="nota">Lo que <b>detiene</b> la obra. Cualquiera puede levantar un freno: taparlo sale
+      más caro que decirlo. Liberar un colado sí pide rol — con el acero mal no se corrige después.</p>
+    <div class="kpis" id="kpisProd"></div>
+
+    <details class="card" id="cardNuevoFreno"><summary><span class="nm">＋ Levantar un freno</span></summary>
+      <div class="body">
+        <div class="quien" style="margin-bottom:.7rem"><span>Frente</span><select id="frFrente"></select></div>
+        <input type="text" id="frTitulo" placeholder="¿Qué está deteniendo el trabajo?">
+        <input type="text" id="frImpacto" placeholder="¿Qué no se puede hacer por esto?">
+        <div class="quien" style="margin:.7rem 0">
+          <span>Quién lo destraba</span><select id="frResp"></select>
+          <span>Para cuándo</span><input type="date" id="frFecha">
+        </div>
+        <label class="chk"><input type="checkbox" id="frPrograma"> Esto atrasa el programa</label>
+        <div class="acciones"><button class="btn pri" id="btnFreno">Levantar el freno</button>
+          <span class="msg" id="frMsg"></span></div>
+      </div>
+    </details>
+
+    <details class="card" id="cardLiberar"><summary><span class="nm">✓ Liberar un colado</span></summary>
+      <div class="body">
+        <div class="quien" style="margin-bottom:.7rem"><span>Frente</span><select id="lbFrente"></select></div>
+        <input type="text" id="lbRef" placeholder="Qué se cuela (ej: zapata Z-1, losa entrepiso eje 3)">
+        <p class="nota" style="margin:.8rem 0 .5rem">Si algo va sin palomear, <b>no se libera</b>. Queda registrado qué faltó.</p>
+        <div id="lbChecks"></div>
+        <div class="acciones"><button class="btn pri" id="btnLiberar">Revisar y liberar</button>
+          <span class="msg" id="lbMsg"></span></div>
+      </div>
+    </details>
+
+    <div id="frenos"></div>
+    <div id="liberaciones"></div>
+  </div>
+
   <div class="pane" id="pBandeja" role="tabpanel" hidden>
     <div id="bandeja"></div>
   </div>
@@ -158,6 +211,14 @@ const $=s=>document.querySelector(s);
 const dinero=n=>"$"+(Number(n)||0).toLocaleString("es-MX",{minimumFractionDigits:2,maximumFractionDigits:2});
 const pct=n=>((Number(n)||0)*100).toFixed(1)+"%";
 const esc=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fecha=f=>{ if(!f) return ""; const d=new Date(f); return isNaN(d)?String(f)
+  : d.toLocaleDateString("es-MX",{day:"numeric",month:"short"}); };
+const dias=f=>{ if(!f) return 0; const d=new Date(f); return isNaN(d)?0
+  : Math.max(0,Math.floor((Date.now()-d)/86400000)); };
+/* las revisiones del colado: si una va sin palomear, no se libera */
+const REVISIONES=[["cimbra","Cimbra aplomada y apuntalada"],["acero","Acero: calibre, traslapes y recubrimiento"],
+  ["instalaciones","Instalaciones ahogadas y probadas"],["limpieza","Limpieza y humedecido"],
+  ["acceso","Acceso para la bomba"]];
 
 async function pedir(recurso,extra){
   const u=GAS+"?recurso="+recurso+"&k="+encodeURIComponent(K)+(extra||"")+"&cb="+Date.now();
@@ -179,7 +240,7 @@ async function entrar(){
   const v=$("#clave").value.trim();
   if(!v){ $("#gerr").textContent="Escribe la clave"; return; }
   $("#btnEntrar").disabled=true; $("#gerr").textContent="";
-  try{ K=v; await cargar(); localStorage.setItem(LSK,v); abrir(); }
+  try{ K=v; await cargar(); await cargarProd(); localStorage.setItem(LSK,v); abrir(); }
   catch(e){ $("#gerr").textContent = e==="clave" ? "Clave incorrecta" : "Sin conexión con el motor de obra"; }
   $("#btnEntrar").disabled=false;
 }
@@ -202,7 +263,8 @@ function pintarEstado(){
     [dinero(k.importe),"por ejecutar"],
     [listos+"/"+nombres.length,"frentes listos"],
     [String(k.conceptos||0),"conceptos"],
-    [String((k.pendientes||0)+(k.porAutorizar||0)),"esperando firma"]
+    [String((k.pendientes||0)+(k.porAutorizar||0)),"esperando firma"],
+    [String(k.frenos||0),(k.frenosPrograma?"frenos · "+k.frenosPrograma+" atrasan":"frenos abiertos")]
   ].map(([v,l])=>'<div class="kp"><div class="v">'+esc(v)+'</div><div class="l">'+esc(l)+'</div></div>').join("");
 
   $("#frentes").innerHTML=nombres.map(n=>{
@@ -211,11 +273,18 @@ function pintarEstado(){
               : p>=0.999 ? '<span class="pill p-ok">terminado</span>'
               : p>0 ? '<span class="pill p-warn">en curso</span>'
               : '<span class="pill p-dim">no empieza</span>';
+    /* aquí es donde sirve haber fusionado: un frente en 0% con freno tiene
+       culpable y fecha; uno en 0% sin freno es que nadie lo ha empezado */
+    const fren = f.frenos ? '<span class="pill p-bad">'+f.frenos+' freno'+(f.frenos>1?'s':'')+
+                 (f.frenaPrograma?' · atrasa':'')+'</span>' : '';
     const conc=(D.conceptos||[]).filter(c=>c.frente===n);
-    return '<details class="card"><summary><span class="nm">'+esc(n)+'</span>'+est+
+    return '<details class="card"><summary><span class="nm">'+esc(n)+'</span>'+est+fren+
       '<span class="mt">'+pct(p)+' · '+dinero(f.importe)+'</span></summary><div class="body">'+
       '<div class="bar"><i style="width:'+(Math.min(1,p)*100).toFixed(1)+'%"></i></div>'+
       (f.sinCostear?'<p class="nota">'+f.sinCostear+' de '+f.n+' conceptos sin precio: no se pueden medir hasta costearlos.</p>':'')+
+      (f.frenos?'<p class="nota nota-mal">'+(D.restricciones||[]).filter(r=>r.frente===n)
+        .map(r=>'⚠ '+esc(r.titulo)+(r.responsable?' — '+esc(r.responsable):'')+
+             (r.compromiso?' · para '+esc(fecha(r.compromiso)):'')).join('<br>')+'</p>':'')+
       '<table><thead><tr><th>Concepto</th><th style="text-align:right">Cant.</th><th>Un</th><th style="text-align:right">Importe</th><th style="text-align:right">Avance</th></tr></thead><tbody>'+
       conc.map(c=>'<tr'+(Number(c.importe)?'':' class="sinp"')+'><td>'+esc(String(c.descripcion).slice(0,90))+'</td>'+
         '<td class="n">'+(c.cantidad===""?"—":Number(c.cantidad).toLocaleString("es-MX"))+'</td>'+
@@ -339,21 +408,138 @@ function pintar(){
   $("#hInfo").textContent=(k.conceptos||0)+" conceptos · "+(k.obras||1)+" obra"+((k.obras||1)>1?"s":"");
   $("#pieCadena").textContent="Rodolfo propone  →  Mariana o Alma verifican  →  Alejandro o Sayri autorizan el pago"+
     "   ·   quien autoriza y captura, queda autorizado directo y sellado";
-  pintarEstado(); pintarCaptura(); pintarBandeja();
+  pintarEstado(); pintarCaptura(); pintarBandeja(); pintarProduccion();
+}
+
+/* ── qué nos frena ── */
+let P=null;
+async function cargarProd(){ try{ P=await pedir("produccion"); }catch(e){ P=null; } }
+
+function pintarProduccion(){
+  const fr=D.frentes||{}, nombres=Object.keys(fr).sort();
+  ["#frFrente","#lbFrente"].forEach(id=>{
+    const sel=$(id);
+    if(sel.options.length!==nombres.length)
+      sel.innerHTML=nombres.map(n=>'<option>'+esc(n)+'</option>').join("");
+  });
+  const rs=$("#frResp");
+  const ps=personas();
+  if(rs.options.length!==ps.length+1)
+    rs.innerHTML='<option value="">—</option>'+ps.map(r=>'<option>'+esc(r.persona)+'</option>').join("");
+  if(!$("#lbChecks").children.length)
+    $("#lbChecks").innerHTML=REVISIONES.map(([k,t])=>
+      '<label class="chk"><input type="checkbox" data-rev="'+k+'"> '+esc(t)+'</label>').join("");
+
+  const k=(P&&P.kpi)||{}, abiertas=(P&&P.restricciones)||[];
+  /* PPC nulo NO es 100%: no haber planeado nada no es haber cumplido todo */
+  const ppc = k.ppc==null ? "—" : pct(k.ppc);
+  $("#kpisProd").innerHTML=[
+    [String(k.frenos||0),"frenos abiertos"],
+    [String(k.frenosPrograma||0),"atrasan el programa"],
+    [String(k.frenoMasViejo||0)+"d","el más viejo"],
+    [ppc, k.ppc==null?"sin nada comprometido":"del plan cumplido"],
+    [String(k.liberadas||0),"colados liberados"],
+    [String(k.rechazadas||0),"colados rechazados"]
+  ].map(([v,l])=>'<div class="kp"><div class="v">'+esc(v)+'</div><div class="l">'+esc(l)+'</div></div>').join("");
+
+  const b=$("#badgeFreno");
+  if(abiertas.length){ b.hidden=false; b.textContent=String(abiertas.length); } else b.hidden=true;
+
+  $("#frenos").innerHTML = !abiertas.length
+    ? '<p class="nota">Nada frenado hoy. Cuando algo detenga un frente, levántalo aquí — el board lo va a mostrar junto al dinero de ese frente.</p>'
+    : '<h3 class="sec">Frenos abiertos</h3>'+abiertas
+        .sort((a,b)=>dias(b.fecha)-dias(a.fecha))
+        .map(r=>{
+          const d=dias(r.fecha), tarde=r.compromiso&&dias(r.compromiso)>0;
+          return '<div class="card fila-freno"><div class="body">'+
+            '<div class="fr-top"><b>'+esc(r.titulo)+'</b>'+
+              (String(r.afecta_programa).toUpperCase()==="SI"?'<span class="pill p-bad">atrasa</span>':'')+
+              '<span class="pill '+(d>=7?'p-bad':d>=3?'p-warn':'p-dim')+'">'+d+'d</span></div>'+
+            '<div class="fr-meta">'+esc(r.frente)+
+              (r.responsable?' · lo destraba '+esc(r.responsable):' · <i>sin responsable</i>')+
+              (r.compromiso?' · para '+esc(fecha(r.compromiso))+(tarde?' <b class="mal">(vencido)</b>':''):'')+'</div>'+
+            (r.impacto?'<div class="fr-meta">Impide: '+esc(r.impacto)+'</div>':'')+
+            '<div class="acciones"><button class="btn" data-cerrar="'+esc(r.id)+'">Ya se destrabó</button></div>'+
+            '</div></div>';
+        }).join("");
+
+  const libs=((P&&P.liberaciones)||[]).slice().reverse().slice(0,8);
+  $("#liberaciones").innerHTML = !libs.length ? "" :
+    '<h3 class="sec">Últimas liberaciones</h3>'+libs.map(l=>
+      '<div class="lib '+(l.resultado==="LIBERADA"?"ok":"mal")+'">'+
+      '<b>'+esc(l.resultado==="LIBERADA"?"✓":"✕")+'</b> '+esc(l.frente)+' · '+esc(l.referencia||l.tipo)+
+      '<span class="fr-meta"> — '+esc(l.liberado_por)+' · '+esc(fecha(l.fecha))+
+      (l.resultado==="RECHAZADA"&&l.nota?' · '+esc(l.nota):'')+'</span></div>').join("");
+
+  $("#frenos").querySelectorAll("[data-cerrar]").forEach(b=>b.onclick=()=>cerrarFreno(b.dataset.cerrar,b));
+}
+
+async function levantarFreno(){
+  const m=$("#frMsg");
+  if(!QUIEN){ m.textContent="Dime quién eres arriba"; return; }
+  const t=$("#frTitulo").value.trim();
+  if(!t){ m.textContent="¿Qué está deteniendo el trabajo?"; $("#frTitulo").focus(); return; }
+  const b=$("#btnFreno"); b.disabled=true; m.textContent="Levantando…";
+  try{
+    await mandar({accion:"restriccion", quien:QUIEN, frente:$("#frFrente").value, titulo:t,
+      impacto:$("#frImpacto").value.trim(), responsable:$("#frResp").value,
+      compromiso:$("#frFecha").value, afecta_programa:$("#frPrograma").checked});
+    $("#frTitulo").value=""; $("#frImpacto").value=""; $("#frFecha").value="";
+    $("#frPrograma").checked=false;
+    m.textContent="Levantado";
+    await cargar(); await cargarProd(); pintar();
+  }catch(e){ m.textContent="No se pudo: "+e; }
+  b.disabled=false;
+}
+
+async function cerrarFreno(id,btn){
+  if(!QUIEN){ alert("Dime quién eres arriba"); return; }
+  const como=prompt("¿Cómo se destrabó?");
+  if(como===null) return;
+  btn.disabled=true; btn.textContent="Cerrando…";
+  try{
+    await mandar({accion:"restriccion", quien:QUIEN, id:id, estado:"CERRADA", como_se_cerro:como});
+    await cargar(); await cargarProd(); pintar();
+  }catch(e){ btn.disabled=false; btn.textContent="Ya se destrabó"; alert("No se pudo: "+e); }
+}
+
+async function liberarColado(){
+  const m=$("#lbMsg");
+  if(!QUIEN){ m.textContent="Dime quién eres arriba"; return; }
+  if(ROL!=="VERIFICA" && ROL!=="AUTORIZA"){ m.textContent="Liberar necesita rol de verificar o autorizar"; return; }
+  const ref=$("#lbRef").value.trim();
+  if(!ref){ m.textContent="¿Qué se va a colar?"; $("#lbRef").focus(); return; }
+  const rev={};
+  $("#lbChecks").querySelectorAll("[data-rev]").forEach(c=>{ rev[c.dataset.rev]=c.checked; });
+  const b=$("#btnLiberar"); b.disabled=true; m.textContent="Revisando…";
+  try{
+    const r=await mandar({accion:"liberacion", quien:QUIEN, tipo:"COLADO",
+      frente:$("#lbFrente").value, referencia:ref, revisiones:rev});
+    m.textContent = r.resultado==="LIBERADA" ? "Liberado ✓"
+      : "NO se libera · falta: "+(r.faltan||[]).join(", ");
+    if(r.resultado==="LIBERADA"){
+      $("#lbRef").value="";
+      $("#lbChecks").querySelectorAll("[data-rev]").forEach(c=>{ c.checked=false; });
+    }
+    await cargarProd(); pintarProduccion();
+  }catch(e){ m.textContent="No se pudo: "+e; }
+  b.disabled=false;
 }
 
 /* ── pestañas ── */
-const T=[["#tEstado","#pEstado"],["#tCapturar","#pCapturar"],["#tBandeja","#pBandeja"]];
+const T=[["#tEstado","#pEstado"],["#tCapturar","#pCapturar"],["#tProduccion","#pProduccion"],["#tBandeja","#pBandeja"]];
 T.forEach(([t,p],i)=>$(t).onclick=()=>T.forEach(([tt,pp],j)=>{
   $(tt).setAttribute("aria-selected",j===i?"true":"false"); $(pp).hidden=(j!==i);
 }));
 $("#selQuien").onchange=()=>{ localStorage.setItem(LSQ,$("#selQuien").value); pintar(); };
 $("#selFrente").onchange=pintarCaptura;
 $("#btnEnviar").onclick=enviar;
+$("#btnFreno").onclick=levantarFreno;
+$("#btnLiberar").onclick=liberarColado;
 $("#btnEntrar").onclick=entrar;
 $("#clave").addEventListener("keydown",e=>{ if(e.key==="Enter") entrar(); });
 
-if(K) cargar().then(abrir).catch(e=>{
+if(K) cargar().then(cargarProd).then(abrir).catch(e=>{
   if(e==="clave"){ localStorage.removeItem(LSK); K=""; $("#gerr").textContent="La clave cambió"; }
   else $("#gerr").textContent="Sin conexión con el motor de obra";
 });

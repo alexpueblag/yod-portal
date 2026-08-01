@@ -1475,21 +1475,33 @@ async function conectarObra(){
     const pct=k.avance||0, pctTxt=(pct*100).toFixed(1)+"%";
     OBRD={ pct, importe:k.importe||0, ejecutado:k.ejecutado||0,
            conceptos:k.conceptos||0, frentes:nombres.length, listos,
-           pendientes:k.pendientes||0, porAutorizar:k.porAutorizar||0 };
+           pendientes:k.pendientes||0, porAutorizar:k.porAutorizar||0,
+           frenos:k.frenos||0, frenosPrograma:k.frenosPrograma||0 };
 
     // LA TORRE DE OBRA · huecos = frentes de trabajo · piezas = frentes terminados
     ORIG[2].h = Math.max(1, nombres.length);
     ORIG[2].p = listos;
     ORIG[2].f = pctTxt;
-    ORIG[2].sub = (k.ejecutado>0 ? "medido sobre " : "sin capturar · ")
-      + (k.sinCostear>0 ? (k.conCosto+" de "+k.conceptos+" costeados") : (nombres.length+" frentes"));
+    ORIG[2].sub = k.frenos
+      ? (k.frenos+" frenado"+(k.frenos>1?"s":"")+(k.frenoMasViejo?" · "+k.frenoMasViejo+"d el más viejo":""))
+      : (k.ejecutado>0 ? "medido sobre " : "sin capturar · ")
+        + (k.sinCostear>0 ? (k.conCosto+" de "+k.conceptos+" costeados") : (nombres.length+" frentes"));
     // picar la charola = ver el estado de CADA frente
+    // un frente FRENADO manda sobre cualquier otro estado: da igual el % si algo
+    // lo tiene detenido, y ahora el motor sí sabe cuál es (Last Planner, v2.0.0)
+    const quienFrena = {};
+    (j.restricciones||[]).forEach(r=>{ (quienFrena[r.frente] = quienFrena[r.frente]||[]).push(r); });
     ORIG[2].items = nombres.map(n=>{ const f=fr[n], pc=f.importe>0?f.ejecutado/f.importe:0;
+      const rs = quienFrena[n]||[], r0 = rs[0];
       return { id:n, tipo:Math.round(pc*100)+"% ejecutado", zona:"Casa Alysa",
-        st: f.sinCostear>f.n*0.5 ? "rojo" : (pc>=0.999?"verde":(pc>0?"ambar":"gris")),
+        st: rs.length ? "rojo"
+          : f.sinCostear>f.n*0.5 ? "rojo" : (pc>=0.999?"verde":(pc>0?"ambar":"gris")),
         nodo:"OBR", emb:"OBR",
-        resp:"—", valor:Math.round(f.importe)||null,
-        accion: f.sinCostear>=f.n   ? "Sin costear · no se puede medir"
+        resp: r0 && r0.responsable ? r0.responsable : "—",
+        dias: rs.length ? (f.diasFrenado||0) : null,
+        valor:Math.round(f.importe)||null,
+        accion: rs.length            ? ("FRENADO: "+r0.titulo+(rs.length>1?" (+"+(rs.length-1)+" más)":""))
+              : f.sinCostear>=f.n   ? "Sin costear · no se puede medir"
               : f.sinCostear>f.n*0.5    ? (f.sinCostear+" de "+f.n+" conceptos sin costear")
               : pc>=0.999               ? "Terminado"
               : pc>0                    ? "En curso"
@@ -1516,7 +1528,8 @@ async function conectarObra(){
       (OBRD.importe/1e6).toFixed(2)+"M · avance medido "+pctTxt+
       " · "+listos+"/"+nombres.length+" frentes listos"+
       (OBRD.pendientes?" · "+OBRD.pendientes+" por verificar":"")+
-      (OBRD.porAutorizar?" · "+OBRD.porAutorizar+" por autorizar":""));
+      (OBRD.porAutorizar?" · "+OBRD.porAutorizar+" por autorizar":"")+
+      (OBRD.frenos?" · ⚠ "+OBRD.frenos+" frenado(s)":""));
   }catch(e){ cegar(KPIHEX_BOT,[7],"motor de obra sin respuesta"); pintar();
      console.warn("Obra sin línea", e); }
 }
