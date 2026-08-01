@@ -360,6 +360,8 @@ if(K) cargar().then(abrir).catch(e=>{
 })();
 </script>
 <script src="chinche.js"></script>
-<script>if(window.YODChinche) YODChinche.init({pantalla:"obra"});</script>
+<script>if(window.YODChinche) YODChinche.init({pantalla:"obra",
+  vista:function(){ var t=document.querySelector('[role="tab"][aria-selected="true"]');
+    return t ? t.textContent.replace(/\s+/g," ").trim() : ""; }});</script>
 </body>
 </html>

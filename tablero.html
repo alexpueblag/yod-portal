@@ -1213,8 +1213,15 @@ F.addEventListener("click",ev=>{
     return;
   }
   const it=ev.target.closest(".it");
-  if(it && GSEL){ F.innerHTML=fichaHTML(GSEL[+it.dataset.i],true); return; }
+  if(it && GSEL){
+    const esc=GSEL[+it.dataset.i];
+    F.innerHTML=fichaHTML(esc,true);
+    // el encargo debe describir ESTE caso, no el montón del que salió
+    if(ULTIMO){ ULTIMO.obj=esc; ULTIMO.grupo=null; ULTIMO.clase="canica"; }
+    return;
+  }
   if(ev.target.closest(".volver") && GSEL){
+    if(ULTIMO){ ULTIMO.obj=null; ULTIMO.grupo=GSEL; ULTIMO.clase="montón de canicas"; }
     F.innerHTML=listaHTML({grupo:GSEL, filtro:GSEL[0]&&GSEL[0].filtro}); }
 });
 let HOVER=null;
@@ -1746,8 +1753,6 @@ function abrir(){
   conectarCRM();
   conectarObra();
   sondaFinance();
-  if(window.YODChinche) YODChinche.init({ pantalla:"tablero", canvas:CV, luz:LZ,
-    vista:()=>VISTA, sinPastilla:EMBED });   // en iframe manda la pastilla del portal
   avisarAlto(); setTimeout(avisarAlto,400); setTimeout(avisarAlto,1600);
   addEventListener("resize",avisarAlto);
 }
@@ -1763,6 +1768,10 @@ async function entrar(){
 document.getElementById("gateBtn").onclick=entrar;
 document.getElementById("gateClave").addEventListener("keydown",e=>{ if(e.key==="Enter") entrar(); });
 const CLV=localStorage.getItem(LSK)||"";
+// la Chinche vive FUERA del candado: si el portero falla, clavar la queja
+// de que no abre es exactamente lo que se necesita
+if(window.YODChinche) YODChinche.init({ pantalla:"tablero", canvas:CV, luz:LZ,
+  vista:()=>VISTA, sinPastilla:EMBED });   // en iframe manda la pastilla del portal
 if(CLV) validar(CLV).then(abrir).catch(e=>{
   if(e==="clave"){ localStorage.removeItem(LSK);
     document.getElementById("gateErr").textContent="La clave cambió"; }

@@ -29,7 +29,11 @@ var db = null, PANT = "os", CTX = {}, abierta = false;
 /* ── el número de la pastilla se lee de localStorage para pintarlo YA,
       sin esperar a que IndexedDB abra ── */
 function leerN(){ try { return parseInt(localStorage.getItem(LSN) || "0", 10) || 0; } catch (e) { return 0; } }
-function guardarN(n){ try { localStorage.setItem(LSN, String(n)); } catch (e) {} }
+function guardarN(n){
+  try { localStorage.setItem(LSN, String(n)); } catch (e) {}
+  /* embebido en YOD OS: la pastilla vive en el documento padre; avisarle */
+  try { if (window.parent !== window) window.parent.postMessage({ yodChinche: n }, "*"); } catch (e) {}
+}
 
 function abrirBD(){
   return new Promise(function (ok, mal) {
@@ -73,7 +77,10 @@ async function borrar(id){
   await abrirBD();
   var t = tx(["chinches", "fotos"], "readwrite");
   t.objectStore("chinches").delete(id); t.objectStore("fotos").delete(id);
-  return new Promise(function (ok) { t.oncomplete = async function () { guardarN((await pendientes()).length); pintarPastilla(); ok(); }; });
+  return new Promise(function (ok) {
+    t.oncomplete = async function () { guardarN((await pendientes()).length); pintarPastilla(); ok(); };
+    t.onerror = function(){ ok(); }; t.onabort = function(){ ok(); };
+  });
 }
 async function pendientes(){ return (await todas()).filter(function (c) { return c.estado !== "mandada"; }); }
 
@@ -181,6 +188,8 @@ function mini(canvas){
 var MAPA = {
   "tablero|canica":  "tablero.html → fichaHTML() y listaHTML(); las canicas se dibujan en canica()/cuenta()",
   "tablero|grupo":   "tablero.html → listaHTML(); el ×N se dibuja en el render de la charola",
+  "tablero|montón de canicas": "tablero.html → listaHTML(); el ×N se dibuja en el render de la charola",
+  "tablero|":        "tablero.html → todo se dibuja en canvas; empieza por pintar() y las tablas KPIHEX/ORIG/PROJ",
   "tablero|hex":     "tablero.html → hexTile() y las tablas KPIHEX_TOP / KPIHEX_BOT",
   "tablero|torre":   "tablero.html → origenes() y la tabla ORIG",
   "tablero|maqueta": "tablero.html → proyectos() y la tabla PROJ",
@@ -210,20 +219,35 @@ function hoja(html, alto){
   document.body.appendChild(v);
   document.body.classList.add("chn-abierto");   // cada pantalla esconde lo suyo
   abierta = true;
-  v.addEventListener("click", function (e) { if (e.target === v) cerrar(v); });
-  requestAnimationFrame(function(){ v.classList.add("on"); });
+  v._urls = [];   /* objectURLs de ESTA hoja: cerrar() los revoca todos */
+  v.addEventListener("click", function (e) {
+    if (e.target !== v) return;
+    /* un dictado a medias no se tira por un toque de más junto al teclado */
+    var ta = v.querySelector(".chn-txt");
+    if (ta && ta.value.trim()) { ta.focus(); return; }
+    cerrar(v);
+  });
+  /* rAF no corre con la pestaña atrás: sin el respaldo, la hoja se queda
+     sin su clase y desplazada 14px para siempre */
+  var enc = function(){ v.classList.add("on"); };
+  requestAnimationFrame(enc); setTimeout(enc, 90);
   return v;
 }
 function cerrar(v){
   v.classList.remove("on"); abierta = false;
-  document.body.classList.remove("chn-abierto");
+  (v._urls || []).forEach(function(u){ try { URL.revokeObjectURL(u); } catch(e){} });
+  v._urls = [];
+  /* si hay otra hoja debajo (entregar encima de la pila), la clase se queda */
+  if (document.querySelectorAll(".chn-velo").length <= 1)
+    document.body.classList.remove("chn-abierto");
   setTimeout(function(){ v.remove(); }, 180);
 }
 function aviso(t){
   var a = document.createElement("div");
   a.className = "chn-aviso"; a.textContent = t;
   document.body.appendChild(a);
-  requestAnimationFrame(function(){ a.classList.add("on"); });
+  var enc = function(){ a.classList.add("on"); };
+  requestAnimationFrame(enc); setTimeout(enc, 90);
   setTimeout(function(){ a.classList.remove("on"); setTimeout(function(){ a.remove(); }, 250); }, 1600);
 }
 
@@ -239,10 +263,12 @@ async function anotar(op){
     css: op.css || "", texto: op.texto || "", valores: op.valores || (CTX.valores ? CTX.valores() : {})
   });
 
-  var url = URL.createObjectURL(await aBlob(lienzo, 0.72));
+  /* la hoja se pinta y el foco se pide DENTRO del gesto: si hubiera un await
+     antes, iOS ya no sube el teclado (ni el micrófono que promete el texto).
+     La foto llega un instante después, al <img> ya puesto. */
   var v = hoja(
     '<div class="chn-tit">¿Qué quieres que cambie aquí?</div>' +
-    '<img class="chn-foto" src="' + url + '" alt="lo que señalaste">' +
+    '<img class="chn-foto" alt="lo que señalaste">' +
     '<div class="chn-chips">' +
       ['Cambiar','Quitar','Agregar','Está mal'].map(function(t){
         return '<button type="button" class="chn-chip" data-v="' + t + '">' + t + '</button>'; }).join("") +
@@ -252,7 +278,13 @@ async function anotar(op){
     '<button type="button" class="chn-btn" data-ok>Clavar</button></div>', "86vh");
 
   var ta = v.querySelector(".chn-txt"), tipo = "";
-  setTimeout(function(){ try { ta.focus(); } catch(e){} }, 260);
+  try { ta.focus(); } catch(e){}
+  aBlob(lienzo, 0.72).then(function (b) {
+    if (!b) { v.querySelector(".chn-foto").remove(); return; }   /* toBlob puede dar null */
+    var u = URL.createObjectURL(b);
+    v._urls.push(u);
+    var im = v.querySelector(".chn-foto"); if (im) im.src = u;
+  });
   v.querySelectorAll(".chn-chip").forEach(function (b) {
     b.onclick = function () {
       v.querySelectorAll(".chn-chip").forEach(function(o){ o.classList.remove("on"); });
@@ -261,11 +293,12 @@ async function anotar(op){
       ta.focus();
     };
   });
-  v.querySelector("[data-x]").onclick = function(){ URL.revokeObjectURL(url); cerrar(v); };
+  v.querySelector("[data-x]").onclick = function(){ cerrar(v); };
   v.querySelector("[data-ok]").onclick = async function () {
     var texto = ta.value.trim();
     if (!texto) { ta.focus(); ta.placeholder = "Escribe qué quieres que cambie…"; return; }
-    this.disabled = true; this.textContent = "Clavando…";
+    var btn = this;
+    btn.disabled = true; btn.textContent = "Clavando…";
     var ch = {
       id: nuevoId(d), creado: d.toISOString(), sello: sello(d), quien: "Alejandro",
       texto: texto, tipo: tipo, estado: "nueva",
@@ -284,9 +317,16 @@ async function anotar(op){
       },
       codigo: dondeVive(PANT, op.clase || "")
     };
-    await guardar(ch, await aBlob(lienzo, 0.7), await aBlob(mini(lienzo), 0.6));
-    URL.revokeObjectURL(url); cerrar(v);
-    aviso("Clavado · llevas " + leerN());
+    try {
+      await guardar(ch, await aBlob(lienzo, 0.7), await aBlob(mini(lienzo), 0.6));
+      cerrar(v);
+      aviso("Clavado · llevas " + leerN());
+    } catch (e) {
+      /* cuota llena o base cerrada: NO fingir que quedó. El texto sigue en la
+         hoja para copiarlo a mano. */
+      btn.disabled = false; btn.textContent = "Clavar";
+      aviso("NO quedó clavado (" + ((e && e.name) || "error de la base") + ") · tu texto sigue aquí");
+    }
   };
 }
 
@@ -344,27 +384,41 @@ function modoSenalar(){
   if (senalando) return;
   var marco = document.createElement("div");
   marco.className = "chn-marco";
-  var pista = document.createElement("div");
+  var pista = document.createElement("button");
+  pista.type = "button";
   pista.className = "chn-pista";
-  pista.textContent = "Toca lo que quieres cambiar · Esc para salir";
+  pista.textContent = "Toca lo que quieres cambiar · aquí para salir";
   document.body.appendChild(marco); document.body.appendChild(pista);
 
   function bajo(ev){
-    var t = ev.touches && ev.touches[0];
-    return document.elementFromPoint(t ? t.clientX : ev.clientX, t ? t.clientY : ev.clientY);
+    /* en touchend el dedo ya se levantó: lo que queda vive en changedTouches */
+    var t = (ev.changedTouches && ev.changedTouches[0]) || (ev.touches && ev.touches[0]);
+    var x = t ? t.clientX : ev.clientX, y = t ? t.clientY : ev.clientY;
+    if (x == null || y == null || isNaN(x)) return null;
+    return document.elementFromPoint(x, y);
   }
+  /* la propia Chinche nunca es señalable: sin esto, la pastilla —el único
+     control visible— se clavaba a sí misma al buscar la salida */
+  function mio(el){ return !!(el && el.closest && el.closest('[class*="chn-"]')); }
   function mover(ev){
     var el = bajo(ev);
-    if (!el || el === marco || el === pista) return;
+    if (!el || mio(el)) return;
     var r = el.getBoundingClientRect();
     marco.style.cssText += ";top:" + r.top + "px;left:" + r.left + "px;width:" +
       r.width + "px;height:" + r.height + "px";
     marco._el = el;
   }
   function tomar(ev){
-    var el = bajo(ev) ;
-    if (!el || el === marco || el === pista) el = marco._el;
-    if (!el) return;
+    var el = bajo(ev);
+    if (!el) return;                              /* barra de scroll: no adivinar */
+    if (el.closest && el.closest(".chn-pista")) { ev.preventDefault(); salir(); return; }
+    if (mio(el)) return;
+    if (el.tagName === "IFRAME") {
+      /* elementFromPoint no cruza al tablero embebido: adentro se pica la canica */
+      ev.preventDefault(); ev.stopPropagation(); salir();
+      aviso("Dentro del tablero pica la canica y usa ✎ Pedir cambio aquí");
+      return;
+    }
     ev.preventDefault(); ev.stopPropagation();   /* que no dispare lo de la página */
     salir();
     anotar({ css: ruta(el), texto: legible(el).slice(0, 160),
@@ -394,16 +448,19 @@ async function pila(){
   var vivas = list.filter(function(c){ return c.estado !== "mandada"; });
   var idas  = list.filter(function(c){ return c.estado === "mandada"; });
   if (!vivas.length && !idas.length) {
-    /* sin lienzo no hay nada que fotografiar todavía: primero se señala */
+    /* sin lienzo no hay nada que fotografiar todavía: primero se señala.
+       En el tablero todo ES lienzo: la ruta buena es picar la canica. */
     if (!CTX.canvas) return modoSenalar();
-    return anotar({});
+    aviso("Pica una canica y usa ✎ Pedir cambio aquí");
+    return;
   }
 
   var v = hoja('<div class="chn-cab"><b>' + vivas.length + '</b> ' +
       (vivas.length === 1 ? "chinche" : "chinches") +
       (idas.length ? ' <span class="chn-gris">· ' + idas.length + " ya mandadas</span>" : "") +
       '<button type="button" class="chn-todos" data-todos>Todos</button></div>' +
-    '<button type="button" class="chn-senalar" data-senalar>&#9998; Señalar algo de esta pantalla</button>' +
+    (CTX.canvas ? "" :
+      '<button type="button" class="chn-senalar" data-senalar>&#9998; Señalar algo de esta pantalla</button>') +
     '<div class="chn-lista" data-lista></div>' +
     '<div class="chn-amarre"><input type="text" data-amarre placeholder="¿Algo que amarre a todos? (opcional)"></div>' +
     '<div class="chn-pie"><button type="button" class="chn-btn2" data-x>Cerrar</button>' +
@@ -432,7 +489,7 @@ async function pila(){
     var f = await foto(c.id);
     var el = cont.querySelector('[data-mini="' + c.id + '"]');
     if (!el) return;
-    if (f && f.mini) { var u = URL.createObjectURL(f.mini); el.style.backgroundImage = "url(" + u + ")"; }
+    if (f && f.mini) { var u = URL.createObjectURL(f.mini); v._urls.push(u); el.style.backgroundImage = "url(" + u + ")"; }
     else el.textContent = "sin foto";
   });
 
@@ -444,11 +501,15 @@ async function pila(){
     };
   });
   v.querySelector("[data-todos]").onclick = function () {
-    var cs = cont.querySelectorAll("[data-sel]"), alguno = [].some.call(cs, function(x){ return !x.checked; });
+    /* solo las vivas: las mandadas ya soltaron su foto grande y reincluirlas
+       produce encargos que prometen capturas que no van */
+    var cs = cont.querySelectorAll(".chn-fila:not(.ida) [data-sel]");
+    var alguno = [].some.call(cs, function(x){ return !x.checked; });
     [].forEach.call(cs, function (x) { x.checked = alguno; });
   };
   v.querySelector("[data-x]").onclick = function(){ cerrar(v); };
-  v.querySelector("[data-senalar]").onclick = function () {
+  var bs = v.querySelector("[data-senalar]");
+  if (bs) bs.onclick = function () {
     /* en el tablero ya se señala picando la canica; aquí es para todo lo demás */
     cerrar(v); setTimeout(modoSenalar, 220);
   };
@@ -457,8 +518,14 @@ async function pila(){
                  .map(function(x){ return x.dataset.sel; });
     if (!ids.length) { aviso("No escogiste ninguna"); return; }
     var amarre = v.querySelector("[data-amarre]").value.trim();
-    cerrar(v);
-    await entregar(ids, amarre);
+    /* la pila se queda abierta mientras se empaca: si se cerrara ya, la
+       pastilla vuelve a ser tocable y se apilan hojas */
+    var btn = this; btn.disabled = true; btn.textContent = "Armando el encargo…";
+    try { await entregar(ids, amarre, v); }
+    catch (e) {
+      btn.disabled = false; btn.textContent = "Pedir el cambio";
+      aviso("No se pudo armar: " + ((e && e.message) || "error"));
+    }
   };
 }
 function esc(s){ return String(s == null ? "" : s).replace(/[&<>"]/g, function(c){
@@ -473,15 +540,27 @@ async function armarTexto(ids, amarre){
   var list = (await todas()).filter(function(c){ return ids.indexOf(c.id) > -1; })
                             .sort(function(a,b){ return a.creado < b.creado ? -1 : 1; });
   var d = new Date(), nom = nombreEncargo(d);
+  /* PRIMERO se averigua qué fotos existen de verdad: el texto y el zip salen
+     de esta misma lista, así que no pueden contradecirse. Una mandada ya
+     soltó su .jpg grande; queda la miniatura y el texto lo dice. */
+  var fotos = {}, nf0 = 0;
+  for (var i = 0; i < list.length; i++) {
+    if (list[i].modo !== "lienzo") continue;
+    var f = await foto(list[i].id);
+    var b = f && (f.full || f.mini);
+    nf0++;
+    fotos[list[i].id] = b
+      ? { nombre: nom + "-" + nf0 + ".jpg", blob: b, esMini: !(f && f.full) }
+      : null;
+  }
+  var conFoto = Object.keys(fotos).filter(function(k){ return fotos[k]; }).length;
   var L = [];
   L.push("# Encargo " + nom + " · " + list.length + (list.length===1?" cambio":" cambios"));
   L.push("Alejandro · " + sello(d) + " (America/Hermosillo) · desde " + aparato());
   L.push("Repo: alexpueblag/yod-portal · publicado en alexpueblag.github.io/yod-portal/");
-  var conFoto = list.filter(function(c){ return c.modo === "lienzo"; }).length;
   L.push("Capturas junto a este archivo: " + conFoto);
   L.push("");
   if (amarre) { L.push("**Lo que quiero con todo esto:** " + amarre); L.push(""); }
-  var nf = 0;
   list.forEach(function (c, i) {
     L.push("────────────────────────────────────────────────────────────────");
     L.push("## " + (i+1) + " · " + (c.tipo ? c.tipo.toUpperCase() : "CAMBIO") + " · " +
@@ -490,7 +569,6 @@ async function armarTexto(ids, amarre){
     L.push('**Dice Alejandro:** "' + c.texto + '"');
     L.push("");
     if (c.modo === "lienzo") {
-      nf++;
       L.push("- **Punto exacto:** fracción x=" + c.ancla.x + " y=" + c.ancla.y + " del lienzo" +
              (c.ancla.clase ? " · señaló un " + c.ancla.clase : ""));
       if (c.objeto) {
@@ -500,7 +578,10 @@ async function armarTexto(ids, amarre){
         });
         L.push("- **Objeto que tenía enfrente:** " + partes.join(" · "));
       }
-      L.push("- **Captura:** " + nom + "-" + nf + ".jpg");
+      var ft = fotos[c.id];
+      if (ft) L.push("- **Captura:** " + ft.nombre +
+                     (ft.esMini ? " (miniatura: la grande se soltó al mandarla antes)" : ""));
+      else L.push("- **Captura:** ya no está (se soltó al mandarla antes); usa el Punto exacto");
     } else {
       var e = c.elemento || {};
       if (e.seccion) L.push("- **Sección:** " + e.seccion);
@@ -524,9 +605,9 @@ async function armarTexto(ids, amarre){
   L.push("- **El tablero es un canvas 2D con homografía cenital:** no hay DOM que inspeccionar adentro, todo se");
   L.push("  dibuja con paths y fillText. La ficha que sale al picar sí es HTML, encima del lienzo.");
   L.push("- Si algo no se entiende, pregunta por su número antes de tocar nada.");
-  return { nombre: nom, texto: L.join("\n"), lista: list };
+  return { nombre: nom, texto: L.join("\n"), lista: list, fotos: fotos };
 }
-async function entregar(ids, amarre){
+async function entregar(ids, amarre, vAnterior){
   var r = await armarTexto(ids, amarre);
   /* el paquete se arma ANTES de pintar la hoja, igual que el texto del
      portapapeles y por la misma razón: `await` se come el gesto del usuario y
@@ -534,15 +615,24 @@ async function entregar(ids, amarre){
      funcionado y no bajaba nada—. Con el blob ya listo, el botón es un clic
      seco dentro del gesto. */
   var piezas = null, zip = null, fallo = "";
-  try { piezas = await piezasDe(r); zip = await armarZip(piezas); }
+  try { piezas = piezasDe(r); zip = await armarZip(piezas); }
   catch (e) { fallo = (e && e.message) ? e.message : "no se pudo empacar"; }
+  /* compartir archivos no existe en todos lados: el botón solo sale si el
+     aparato DICE que puede (en macOS Chrome navigator.share existe pero
+     rechaza archivos: botón muerto sin este filtro) */
+  var archivos = (piezas || []).map(function (p) {
+    return new File([p.blob], p.nombre, { type: p.blob.type });
+  });
+  var puedeCompartir = !!(navigator.share && navigator.canShare &&
+                          archivos.length && navigator.canShare({ files: archivos }));
+  if (vAnterior) cerrar(vAnterior);   /* la pila se despide justo cuando esta hoja entra */
   var v = hoja('<div class="chn-tit">Encargo listo · ' + r.lista.length +
       (r.lista.length===1?" cambio":" cambios") + "</div>" +
     '<div class="chn-nota">Se llama <b>' + r.nombre + '</b>. Escoge cómo me llega:</div>' +
     '<div class="chn-ops">' +
       '<button type="button" class="chn-btn" data-copiar>Copiar la orden</button>' +
       '<button type="button" class="chn-btn2" data-bajar>Bajar a la Mac</button>' +
-      (navigator.share ? '<button type="button" class="chn-btn2" data-compartir>Compartir</button>' : "") +
+      (puedeCompartir ? '<button type="button" class="chn-btn2" data-compartir>Compartir</button>' : "") +
     "</div>" +
     '<pre class="chn-pre">' + esc(r.texto.slice(0, 1200)) + (r.texto.length > 1200 ? "\n…" : "") + "</pre>" +
     '<div class="chn-pie"><button type="button" class="chn-btn2" data-x>Cerrar</button></div>', "88vh");
@@ -551,27 +641,34 @@ async function entregar(ids, amarre){
      tocar el botón, Safari bloquea el portapapeles por salirse del gesto —
      y falla SOLO en el celular, que es el peor tipo de falla. */
   v.querySelector("[data-copiar]").onclick = async function () {
-    try { await navigator.clipboard.writeText(r.texto); await marcarIdas(ids); cerrar(v);
-          aviso("Copiado · pégalo en Claude"); }
-    catch (e) { aviso("No dejó copiar; usa Bajar a la Mac"); }
+    /* copiar lleva SOLO texto: las fotos grandes se quedan guardadas para
+       poder bajar el zip después */
+    try { await navigator.clipboard.writeText(r.texto); }
+    catch (e) { aviso("No dejó copiar; usa Bajar a la Mac"); return; }
+    cerrar(v); aviso("Copiado · pégalo en Claude");
+    marcarIdas(ids, false);
   };
   v.querySelector("[data-bajar]").onclick = function () {
-    if (zip) { bajar(zip, r.nombre + ".zip"); aviso("En ~/Downloads · dime «lee el encargo»"); }
-    else { /* si el empaque falló, al menos el texto se salva: nunca dejarlo sin nada */
+    if (zip) {
+      bajar(zip, r.nombre + ".zip");
+      aviso("En ~/Downloads · dime «lee el encargo»");
+      marcarIdas(ids, true); cerrar(v);
+    } else {
+      /* el empaque falló: baja el texto pero NO se marca nada — la pila queda
+         intacta, con sus fotos, para reintentar cuando haya memoria */
       bajar(new Blob([r.texto], { type: "text/markdown" }), r.nombre + ".md");
-      aviso("Sin fotos (" + fallo + "); bajó solo el texto"); }
-    marcarIdas(ids); cerrar(v);
+      aviso("Bajó solo el texto (" + fallo + ") · la pila queda para reintentar");
+    }
   };
   var comp = v.querySelector("[data-compartir]");
   if (comp) comp.onclick = function () {
-    /* también prearmado: navigator.share exige gesto vivo igual que la descarga */
-    var archivos = (piezas || []).map(function (p) {
-      return new File([p.blob], p.nombre, { type: p.blob.type });
-    });
-    if (!archivos.length) { aviso("No hay nada que compartir"); return; }
+    /* prearmado: navigator.share exige gesto vivo igual que la descarga */
     navigator.share({ files: archivos, title: r.nombre })
-      .then(function(){ marcarIdas(ids); cerrar(v); })
-      .catch(function(){});
+      .then(function(){ marcarIdas(ids, true); cerrar(v); })
+      .catch(function (err) {
+        /* AbortError = él canceló, eso no se regaña */
+        if (err && err.name !== "AbortError") aviso("No se pudo compartir (" + err.name + "); usa Bajar a la Mac");
+      });
   };
   v.querySelector("[data-x]").onclick = function(){ cerrar(v); };
 }
@@ -626,63 +723,73 @@ async function armarZip(archivos){
   fin.setUint32(12, tamCentro, true); fin.setUint32(16, off, true); fin.setUint16(20, 0, true);
   return new Blob(partes.concat(centro, [fin.buffer]), { type: "application/zip" });
 }
-/* junta el encargo entero: el texto y una foto por cada chinche que la tenga */
-async function piezasDe(r){
+/* junta el encargo entero: el texto y las MISMAS fotos que el texto promete */
+function piezasDe(r){
   var piezas = [{ nombre: r.nombre + ".md", blob: new Blob([r.texto], { type: "text/markdown" }) }];
-  var n = 0;
-  for (var i = 0; i < r.lista.length; i++) {
-    if (r.lista[i].modo !== "lienzo") continue;
-    n++; var f = await foto(r.lista[i].id);
-    if (f && f.full) piezas.push({ nombre: r.nombre + "-" + n + ".jpg", blob: f.full });
-  }
+  Object.keys(r.fotos || {}).forEach(function (id) {
+    var ft = r.fotos[id];
+    if (ft) piezas.push({ nombre: ft.nombre, blob: ft.blob });
+  });
   return piezas;
 }
 function bajar(blob, nombre){
   var u = URL.createObjectURL(blob), a = document.createElement("a");
   a.href = u; a.download = nombre; document.body.appendChild(a); a.click(); a.remove();
-  setTimeout(function(){ URL.revokeObjectURL(u); }, 4000);
+  /* 3 min: en iOS el diálogo de descarga espera al usuario y 4 s lo mataban */
+  setTimeout(function(){ URL.revokeObjectURL(u); }, 180000);
 }
-/* mandadas: NO se borran. Sueltan la foto grande y se van al fondo de la pila,
-   para que se pueda decir "los que te mandé el martes" y sigan ahí. */
-async function marcarIdas(ids){
+/* mandadas: NO se borran. Se van al fondo de la pila, para que se pueda decir
+   "los que te mandé el martes" y sigan ahí. La foto grande se suelta SOLO si
+   este camino de entrega la llevó de verdad (zip o compartir); copiar la orden
+   solo lleva texto, así que las fotos se quedan para el zip de después.
+   Y todo se lee ANTES de abrir la transacción de escritura: WebKit desactiva
+   una transacción de IndexedDB si cedes el microtask a media vuelta. */
+async function marcarIdas(ids, soltarFotos){
   await abrirBD();
+  var chs = [], fts = [];
+  for (var i = 0; i < ids.length; i++) {
+    var c = await pedir(tx(["chinches"], "readonly").objectStore("chinches").get(ids[i]));
+    if (c) chs.push(c);
+    if (soltarFotos) {
+      var f = await pedir(tx(["fotos"], "readonly").objectStore("fotos").get(ids[i]));
+      if (f && f.full) fts.push(f);
+    }
+  }
+  var ahora = new Date().toISOString();
   var t = tx(["chinches", "fotos"], "readwrite");
   var s = t.objectStore("chinches"), fs = t.objectStore("fotos");
-  for (var i = 0; i < ids.length; i++) {
-    var c = await pedir(s.get(ids[i]));
-    if (!c) continue;
-    c.estado = "mandada"; c.mandada = new Date().toISOString();
-    s.put(c);
-    var f = await pedir(fs.get(ids[i]));
-    if (f) { f.full = null; fs.put(f); }          // suelta la grande, conserva la miniatura
-  }
-  return new Promise(function (ok) { t.oncomplete = async function () {
-    guardarN((await pendientes()).length); pintarPastilla(); ok(); }; });
+  chs.forEach(function (c) { c.estado = "mandada"; c.mandada = ahora; s.put(c); });
+  fts.forEach(function (f) { f.full = null; fs.put(f); });   // conserva la miniatura
+  return new Promise(function (ok) {
+    t.oncomplete = async function () { guardarN((await pendientes()).length); pintarPastilla(); ok(); };
+    t.onerror = function(){ ok(); }; t.onabort = function(){ ok(); };
+  });
 }
 
 /* ═══════════════════════ ESTILO ═══════════════════════ */
 function estilo(){
   var s = document.createElement("style");
   s.textContent = [
-/* 68: encima de porteros y paneles (obra.html tapa a z:50), debajo del velo (70) */
-".chn-pastilla{position:fixed;right:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:68;",
+/* 236+: encima de porteros (obra z:50, tablero z:60) Y del cajón móvil de
+   YOD OS (scrim 205, sidebar 210), debajo de nada que importe */
+".chn-pastilla{position:fixed;right:14px;bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:236;",
 " min-width:44px;height:44px;padding:0 12px;border-radius:22px;border:1px solid rgba(46,36,18,.35);",
 " background:rgba(241,228,196,.82);color:#2E2A22;font:800 14px/44px 'Helvetica Neue',Arial,sans-serif;",
 " text-align:center;cursor:pointer;backdrop-filter:blur(6px);box-shadow:0 3px 14px rgba(0,0,0,.22);",
 " -webkit-tap-highlight-color:transparent}",
 ".chn-pastilla.con{background:#E8A02B;color:#231C0E}",
 ".chn-pastilla.llena{background:#D93A34;color:#fff}",
-".chn-velo{position:fixed;inset:0;z-index:70;background:rgba(12,10,6,.55);display:flex;align-items:flex-end;",
+".chn-velo{position:fixed;inset:0;z-index:240;background:rgba(12,10,6,.55);display:flex;align-items:flex-end;",
 " justify-content:center}",
 ".chn-hoja{width:min(680px,100%);background:#F6F1E4;border-radius:16px 16px 0 0;padding:18px 18px",
 " calc(18px + env(safe-area-inset-bottom,0px));overflow:auto;transition:transform .18s;",
 " font-family:'Helvetica Neue',Arial,sans-serif;color:#2E2A22}",
 ".chn-velo:not(.on) .chn-hoja{transform:translateY(14px)}",
-".chn-marco{position:fixed;z-index:69;pointer-events:none;border:2px solid #D93A34;",
+".chn-marco{position:fixed;z-index:238;pointer-events:none;border:2px solid #D93A34;",
 " background:rgba(217,58,52,.12);border-radius:4px;transition:top .06s,left .06s,width .06s,height .06s}",
-".chn-pista{position:fixed;z-index:71;left:50%;transform:translateX(-50%);bottom:22px;",
+".chn-pista{position:fixed;z-index:242;border:0;cursor:pointer;left:50%;transform:translateX(-50%);bottom:22px;",
 " background:#2E2A22;color:#F6F1E4;font:600 13px/1 'Helvetica Neue',Arial;padding:10px 16px;",
-" border-radius:999px;pointer-events:none;box-shadow:0 6px 18px rgba(0,0,0,.3)}",
+" border-radius:999px;box-shadow:0 6px 18px rgba(0,0,0,.3)}",
 ".chn-senalar{display:block;width:100%;margin:0 0 12px;padding:11px;background:#EFE7D4;",
 " border:1px dashed #8B7A57;border-radius:9px;color:#5A4C30;cursor:pointer;",
 " font:700 14px/1 'Helvetica Neue',Arial}",
@@ -727,7 +834,7 @@ function estilo(){
 ".chn-pre{background:#EFE7D5;border:1px solid rgba(90,76,48,.35);border-radius:9px;padding:11px;",
 " font:500 11.5px/1.45 ui-monospace,Menlo,monospace;white-space:pre-wrap;max-height:32vh;overflow:auto;color:#3A342A}",
 ".chn-aviso{position:fixed;left:50%;bottom:calc(72px + env(safe-area-inset-bottom,0px));transform:translate(-50%,10px);",
-" z-index:80;background:#2E2A22;color:#F6F1E4;padding:11px 20px;border-radius:22px;",
+" z-index:244;background:#2E2A22;color:#F6F1E4;padding:11px 20px;border-radius:22px;",
 " font:700 14px 'Helvetica Neue',Arial;opacity:0;transition:.22s;pointer-events:none}",
 ".chn-aviso.on{opacity:1;transform:translate(-50%,0)}",
 "@media (prefers-reduced-motion:reduce){.chn-velo,.chn-hoja,.chn-aviso{transition:none}}"
@@ -742,13 +849,29 @@ function init(op){
   CTX = op;
   estilo();
   if (op.sinPastilla) { pintarPastilla(); return; }
+  addEventListener("message", function (ev) {
+    /* solo el conteo, y solo si es un número: nada más se acepta de un mensaje */
+    if (ev.data && typeof ev.data.yodChinche === "number") {
+      guardarN(ev.data.yodChinche); pintarPastilla();
+    }
+  });
   pastilla = document.createElement("button");
   pastilla.type = "button";
   pastilla.setAttribute("aria-label", "Pendientes de cambio");
-  pastilla.onclick = function(){ if (!abierta) pila(); };
+  pastilla.onclick = function () {
+    if (senalando) { senalando(); return; }        /* la salida que sí existe en el cel */
+    if (abierta) return;
+    pila().catch(function (e) {
+      aviso("No abre la base de pendientes (" + ((e && e.name) || "error") + ")");
+    });
+  };
   document.body.appendChild(pastilla);
   pintarPastilla();
-  abrirBD().then(async function(){ guardarN((await pendientes()).length); pintarPastilla(); }).catch(function(){});
+  abrirBD().then(async function(){ guardarN((await pendientes()).length); pintarPastilla(); })
+    .catch(function () {
+      /* navegación privada o almacenamiento bloqueado: que no finja un conteo */
+      if (pastilla) { pastilla.textContent = "📌 ×"; pastilla.title = "La base de pendientes no abre en este navegador"; }
+    });
 }
 
 window.YODChinche = { init: init, anotar: anotar, pila: pila, senalar: modoSenalar, cuantas: leerN };
