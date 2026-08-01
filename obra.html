@@ -98,6 +98,9 @@ textarea{width:100%;padding:.55rem .65rem;background:var(--panel2);border:1px so
 .lib{padding:.5rem .7rem;border-left:2px solid var(--line);margin-bottom:.3rem;font-size:.86rem}
 .lib.ok{border-left-color:var(--ok)}
 .lib.mal{border-left-color:var(--bad)}
+#pSemana input[type=text]{width:100%;background:var(--panel);
+  border:1px solid var(--line);border-radius:2px;color:var(--fg);padding:.55rem .7rem;
+  font:inherit;font-size:.9rem;margin-bottom:.5rem}
 #pProduccion input[type=text],#pProduccion input[type=date]{width:100%;background:var(--panel);
   border:1px solid var(--line);border-radius:2px;color:var(--fg);padding:.55rem .7rem;
   font:inherit;font-size:.9rem;margin-bottom:.5rem}
@@ -133,6 +136,7 @@ textarea{width:100%;padding:.55rem .65rem;background:var(--panel2);border:1px so
   <nav role="tablist">
     <button id="tEstado" role="tab" aria-selected="true" aria-controls="pEstado">Estado</button>
     <button id="tCapturar" role="tab" aria-selected="false" aria-controls="pCapturar">Capturar avance</button>
+    <button id="tSemana" role="tab" aria-selected="false" aria-controls="pSemana">La semana<span class="b" id="badgeSem" hidden>0</span></button>
     <button id="tProduccion" role="tab" aria-selected="false" aria-controls="pProduccion">Qué nos frena<span class="b" id="badgeFreno" hidden>0</span></button>
     <button id="tBandeja" role="tab" aria-selected="false" aria-controls="pBandeja">Mi bandeja<span class="b" id="badge" hidden>0</span></button>
   </nav>
@@ -156,6 +160,29 @@ textarea{width:100%;padding:.55rem .65rem;background:var(--panel2);border:1px so
         <span class="msg" id="capMsg"></span>
       </div>
     </div>
+  </div>
+
+  <div class="pane" id="pSemana" role="tabpanel" hidden>
+    <p class="nota">El lunes se compromete lo que <b>sí</b> se va a hacer; el viernes se cierra.
+      Lo que no se hizo pide su causa — sin ella el porcentaje solo deprime, con ella se corrige.</p>
+    <div class="kpis" id="kpisSem"></div>
+
+    <details class="card" id="cardNuevaAct"><summary><span class="nm">＋ Comprometer una actividad</span></summary>
+      <div class="body">
+        <div class="quien" style="margin-bottom:.7rem">
+          <span>Semana</span><select id="akSemana"></select>
+          <span>Frente</span><select id="akFrente"></select>
+        </div>
+        <input type="text" id="akActividad" placeholder="¿Qué se va a hacer? (ej: colar losa de entrepiso eje 3)">
+        <input type="text" id="akPrereq" placeholder="¿Qué tiene que estar listo antes? (opcional)">
+        <div class="quien" style="margin:.7rem 0"><span>Quién</span><select id="akResp"></select></div>
+        <div class="acciones"><button class="btn pri" id="btnActividad">Comprometer</button>
+          <span class="msg" id="akMsg"></span></div>
+      </div>
+    </details>
+
+    <div id="semana"></div>
+    <div id="causas"></div>
   </div>
 
   <div class="pane" id="pProduccion" role="tabpanel" hidden>
@@ -408,7 +435,110 @@ function pintar(){
   $("#hInfo").textContent=(k.conceptos||0)+" conceptos · "+(k.obras||1)+" obra"+((k.obras||1)>1?"s":"");
   $("#pieCadena").textContent="Rodolfo propone  →  Mariana o Alma verifican  →  Alejandro o Sayri autorizan el pago"+
     "   ·   quien autoriza y captura, queda autorizado directo y sellado";
-  pintarEstado(); pintarCaptura(); pintarBandeja(); pintarProduccion();
+  pintarEstado(); pintarCaptura(); pintarBandeja(); pintarSemana(); pintarProduccion();
+}
+
+/* ── la semana (Last Planner) ── */
+const ETIQ_CAUSA={MATERIAL:"Faltó material",MANO_DE_OBRA:"Faltó gente",EQUIPO:"Faltó equipo",
+  PROYECTO:"Faltó definición del proyecto",PERMISO:"Faltó un permiso",CLIMA:"Clima",
+  ANTECEDENTE:"No estaba lista la actividad anterior",CAMBIO_DE_PRIORIDAD:"Se cambió la prioridad",
+  MAL_PLANEADA:"Se planeó mal"};
+
+function pintarSemana(){
+  const fr=D.frentes||{}, nombres=Object.keys(fr).sort();
+  const vent=(P&&P.ventana)||[], k=(P&&P.kpi)||{}, ps=personas();
+  const sel=$("#akSemana");
+  if(sel.options.length!==vent.length)
+    sel.innerHTML=vent.map((w,i)=>'<option value="'+esc(w)+'">'+esc(w)+
+      (i===0?" · esta semana":i===1?" · la que entra":" · en dos")+'</option>').join("");
+  const f=$("#akFrente");
+  if(f.options.length!==nombres.length) f.innerHTML=nombres.map(n=>'<option>'+esc(n)+'</option>').join("");
+  const r=$("#akResp");
+  if(r.options.length!==ps.length+1)
+    r.innerHTML='<option value="">—</option>'+ps.map(x=>'<option>'+esc(x.persona)+'</option>').join("");
+
+  const acts=(P&&P.lookahead)||[];
+  const abiertas=acts.filter(a=>["PLANEADA","LISTA","EN_CURSO"].includes(String(a.estado).toUpperCase()));
+  /* el PPC nulo se dice con palabras, no con un 0% que parecería un fracaso */
+  const ppc = k.ppc==null ? "—" : pct(k.ppc);
+  $("#kpisSem").innerHTML=[
+    [ppc, k.ppc==null?"nada cerrado aún":"del plan cumplido"],
+    [String(k.planeadas||0),"comprometidas"],
+    [String(abiertas.length),"sin cerrar"],
+    [String((P&&P.semanaActual)||"—"),"semana"]
+  ].map(([v,l])=>'<div class="kp"><div class="v">'+esc(v)+'</div><div class="l">'+esc(l)+'</div></div>').join("");
+
+  const b=$("#badgeSem");
+  if(abiertas.length){ b.hidden=false; b.textContent=String(abiertas.length); } else b.hidden=true;
+
+  $("#semana").innerHTML = !acts.length
+    ? '<p class="nota">Nada comprometido esta semana. Mientras no haya compromiso no hay PPC — y sin PPC no se sabe si el plan sirve o solo se escribe.</p>'
+    : '<h3 class="sec">Comprometido esta semana</h3>'+acts.map(a=>{
+        const e=String(a.estado).toUpperCase(), cerrada=(e==="HECHA"||e==="NO_HECHA");
+        const chip = e==="HECHA" ? '<span class="pill p-ok">hecha</span>'
+                   : e==="NO_HECHA" ? '<span class="pill p-bad">no se hizo</span>'
+                   : '<span class="pill p-dim">'+esc(e.toLowerCase())+'</span>';
+        return '<div class="card fila-freno"><div class="body">'+
+          '<div class="fr-top"><b>'+esc(a.actividad)+'</b>'+chip+
+            (a.restriccion_id?'<span class="pill p-bad">freno '+esc(a.restriccion_id)+'</span>':'')+'</div>'+
+          '<div class="fr-meta">'+esc(a.frente||"—")+(a.responsable?' · '+esc(a.responsable):'')+
+            (a.prerrequisitos?' · antes: '+esc(a.prerrequisitos):'')+
+            (a.causa_no_hecha?' · <b class="mal">'+esc(ETIQ_CAUSA[a.causa_no_hecha]||a.causa_no_hecha)+'</b>':'')+'</div>'+
+          (cerrada?'':'<div class="acciones">'+
+            '<button class="btn pri" data-hecha="'+esc(a.id)+'">Se hizo</button>'+
+            '<button class="btn" data-nohecha="'+esc(a.id)+'">No se hizo</button></div>')+
+          '</div></div>';
+      }).join("");
+
+  const cs=(P&&P.causas)||{}, ks=Object.keys(cs);
+  $("#causas").innerHTML = !ks.length ? "" :
+    '<h3 class="sec">Por qué se ha caído el plan</h3>'+
+    ks.sort((a,b)=>cs[b]-cs[a]).map(c=>
+      '<div class="lib mal"><b>'+cs[c]+'×</b> '+esc(ETIQ_CAUSA[c]||c)+'</div>').join("")+
+    '<p class="nota">Lo que más se repite es lo que hay que arreglar primero.</p>';
+
+  $("#semana").querySelectorAll("[data-hecha]").forEach(x=>x.onclick=()=>cerrarAct(x.dataset.hecha,"HECHA",x));
+  $("#semana").querySelectorAll("[data-nohecha]").forEach(x=>x.onclick=()=>cerrarAct(x.dataset.nohecha,"NO_HECHA",x));
+}
+
+async function comprometer(){
+  const m=$("#akMsg");
+  if(!QUIEN){ m.textContent="Dime quién eres arriba"; return; }
+  const a=$("#akActividad").value.trim();
+  if(!a){ m.textContent="¿Qué se va a hacer?"; $("#akActividad").focus(); return; }
+  const b=$("#btnActividad"); b.disabled=true; m.textContent="Comprometiendo…";
+  try{
+    await mandar({accion:"lookahead", quien:QUIEN, semana:$("#akSemana").value,
+      frente:$("#akFrente").value, actividad:a, prerrequisitos:$("#akPrereq").value.trim(),
+      responsable:$("#akResp").value});
+    $("#akActividad").value=""; $("#akPrereq").value="";
+    m.textContent="Comprometida";
+    await cargarProd(); pintarSemana();
+  }catch(e){ m.textContent="No se pudo: "+e; }
+  b.disabled=false;
+}
+
+async function cerrarAct(id,estado,btn){
+  if(!QUIEN){ alert("Dime quién eres arriba"); return; }
+  let causa="", freno=false;
+  if(estado==="NO_HECHA"){
+    /* la causa NO es opcional: el motor rebota sin ella, y con razón */
+    const ops=(P&&P.causasPosibles)||Object.keys(ETIQ_CAUSA);
+    const txt=ops.map((c,i)=>(i+1)+". "+(ETIQ_CAUSA[c]||c)).join("\n");
+    const r=prompt("¿Por qué no se hizo?\n\n"+txt+"\n\nEscribe el número:");
+    if(r===null) return;
+    const i=parseInt(r,10)-1;
+    if(!(i>=0 && i<ops.length)){ alert("Escoge un número de la lista"); return; }
+    causa=ops[i];
+    freno=confirm("¿Sigue frenado?\n\nSi dices que sí, se levanta el freno solo y queda ligado a esta actividad, para que la semana que entra nadie la vuelva a comprometer a ciegas.");
+  }
+  btn.disabled=true; btn.textContent="…";
+  try{
+    const r=await mandar({accion:"lookahead", quien:QUIEN, id:id, estado:estado,
+      causa_no_hecha:causa, levantar_freno:freno});
+    await cargar(); await cargarProd(); pintar();
+    if(r.freno_creado) alert("Se levantó el freno "+r.freno_creado+" y quedó ligado.");
+  }catch(e){ btn.disabled=false; btn.textContent=estado==="HECHA"?"Se hizo":"No se hizo"; alert("No se pudo: "+e); }
 }
 
 /* ── qué nos frena ── */
@@ -527,7 +657,7 @@ async function liberarColado(){
 }
 
 /* ── pestañas ── */
-const T=[["#tEstado","#pEstado"],["#tCapturar","#pCapturar"],["#tProduccion","#pProduccion"],["#tBandeja","#pBandeja"]];
+const T=[["#tEstado","#pEstado"],["#tCapturar","#pCapturar"],["#tSemana","#pSemana"],["#tProduccion","#pProduccion"],["#tBandeja","#pBandeja"]];
 T.forEach(([t,p],i)=>$(t).onclick=()=>T.forEach(([tt,pp],j)=>{
   $(tt).setAttribute("aria-selected",j===i?"true":"false"); $(pp).hidden=(j!==i);
 }));
@@ -535,6 +665,7 @@ $("#selQuien").onchange=()=>{ localStorage.setItem(LSQ,$("#selQuien").value); pi
 $("#selFrente").onchange=pintarCaptura;
 $("#btnEnviar").onclick=enviar;
 $("#btnFreno").onclick=levantarFreno;
+$("#btnActividad").onclick=comprometer;
 $("#btnLiberar").onclick=liberarColado;
 $("#btnEntrar").onclick=entrar;
 $("#clave").addEventListener("keydown",e=>{ if(e.key==="Enter") entrar(); });
