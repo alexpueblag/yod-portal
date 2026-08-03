@@ -6,7 +6,7 @@
 .yod-shell{
   --yg:#9a7b3f; --yg-hi:#b07c2e; --yg-soft:#e9dfcb;
   --yink:#17140f; --ypaper:#f6f3ed; --ypaper-2:#eee9df; --ycard:#fff;
-  --ymuted:#766f62; --yline:#e1dacb; --ytext:#231d14;
+  --ymuted:#5f594e; --yline:#e1dacb; --ytext:#231d14;
   --yshadow:0 18px 48px rgba(35,29,20,.09);
 }
 body.yod-on{margin:0;background:#f6f3ed}
@@ -26,7 +26,7 @@ body.yod-on{margin:0;background:#f6f3ed}
 .yod-nav{display:flex;flex-direction:column;gap:3px;padding-top:20px;flex:1 1 auto;overflow-y:auto;min-height:0;
   scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.14) transparent}
 .yod-nav::-webkit-scrollbar{width:5px}.yod-nav::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:3px}
-.yod-nav-label{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:#7c766a;font-weight:600;
+.yod-nav-label{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:#9a9382;font-weight:600;
   padding:15px 12px 7px;margin:6px 0 0}
 .yod-nav-item{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:9px;text-decoration:none;
   color:#9f9a8f;font-size:13.5px;cursor:pointer;border:0;background:none;width:100%;text-align:left;font-family:inherit}
@@ -35,7 +35,7 @@ body.yod-on{margin:0;background:#f6f3ed}
 .yod-nav-item:hover,.yod-nav-item:focus-visible{background:rgba(255,255,255,.07);color:#fff;outline:none}
 .yod-nav-item.active{background:rgba(154,123,63,.2);color:#ead8b5}
 .yod-os-link{color:#ead8b5;margin-bottom:4px}
-.yod-nav-loading{font-size:12px;color:#7c766a;padding:6px 12px;display:flex;align-items:center;gap:7px}
+.yod-nav-loading{font-size:12px;color:#9a9382;padding:6px 12px;display:flex;align-items:center;gap:7px}
 .yod-foot{margin-top:auto;border-top:1px solid rgba(255,255,255,.08);padding:18px 10px 0;display:flex;
   align-items:center;gap:10px;position:relative;z-index:1}
 .yod-avatar{width:35px;height:35px;border-radius:50%;display:grid;place-items:center;background:var(--yg);
