@@ -11,7 +11,27 @@
 
   var LSC = 'pyod_clave_v1';
   var PORTAL = 'https://script.google.com/macros/s/AKfycby5LKYKRwl0EsNgppOIeD_ArST8vSXRgNO4ns8XZbFW4yjfglzu4io_vhabB8h-J792Tw/exec?action=read&resource=Portal';
-  var PORTERO = 'https://script.google.com/macros/s/AKfycbwlDDCWWzOWYZsUpBU9uqsQ7aenQ469PF6s6FkNlBFS1_cJSU5njG9oQmuyELy5zlqzFg/exec';
+  /* El marco que envuelve TODOS los tableros tenía su propio portero apuntando
+     al del dominio suspendido. Con la suscripción caída, su canje fallaba y el
+     usuario quedaba en "Sesión por validar" aunque el gate ya lo hubiera dejado
+     entrar. Ahora usa el mismo relevo que el resto: original, y si falla, respaldo. */
+  var PORTERO_ORIGINAL = 'https://script.google.com/macros/s/AKfycbwlDDCWWzOWYZsUpBU9uqsQ7aenQ469PF6s6FkNlBFS1_cJSU5njG9oQmuyELy5zlqzFg/exec';
+  var PORTERO_RESPALDO = 'https://script.google.com/macros/s/AKfycbyrhqMb70Qh8BljAOYnSYBZ8IXUuEclFWPg10NWIv3GJ-nAR597OTsGB4IL-xyUl7Ms/exec';
+  var PORTERO = (function () { try { return localStorage.getItem('pyod_portero') || PORTERO_ORIGINAL; } catch (e) { return PORTERO_ORIGINAL; } })();
+  function canjeConRelevo(k) {
+    function intenta(base) {
+      return fetch(base + '?recurso=canje&t=' + encodeURIComponent(k), { cache: 'no-store', credentials: 'omit' })
+        .then(function (r) { return r.text(); })
+        .then(function (t) { try { return JSON.parse(t); } catch (e) { return null; } });
+    }
+    return intenta(PORTERO).then(function (j) {
+      if (j && j.ok) return j;
+      if (PORTERO === PORTERO_RESPALDO) return j;
+      PORTERO = PORTERO_RESPALDO;
+      try { localStorage.setItem('pyod_portero', PORTERO_RESPALDO); } catch (e) { }
+      return intenta(PORTERO);
+    }).catch(function () { return null; });
+  }
   var OS = 'https://alexpueblag.github.io/yod-portal/os/';
   var CORPORATE = 'https://yodesarrollo.mx/';
   var DEST = {
@@ -216,8 +236,7 @@
   function loadIdentity() {
     var k = tok();
     if (!k) { state.identity = 'fail'; set('yodRole', 'Requiere acceso'); applyNav(); return; }
-    fetch(PORTERO + '?recurso=canje&t=' + encodeURIComponent(k), { cache: 'no-store', credentials: 'omit' })
-      .then(function (r) { return r.json(); })
+    canjeConRelevo(k)
       .then(function (j) {
         if (!j || !j.ok) throw 0;
         state.role = j.rol || 'vista'; state.boards = j.boards || '';
