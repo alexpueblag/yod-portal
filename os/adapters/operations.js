@@ -15,9 +15,16 @@
     if(['en standby','en standby.','en revisión','en revision','subido','detenido'].includes(status))return 'En standby';
     return 'Pendiente';
   }
+  // El año viene guardado en la tarea; si es de antes de que se empezara a guardar,
+  // se asume el año en curso (comportamiento previo). Sin esto, el 1 de enero todas
+  // las tareas del año pasado se leen como del año que entra.
+  function taskYear(task){
+    var y=parseInt(task&&task.anio,10);
+    return (isFinite(y)&&y>2000)?y:new Date().getFullYear();
+  }
   function dueDate(task){
     var dayMatch=String(task&&task.fecha||'').match(/(\d{1,2})/);var month=MONTHS[String(task&&(task.mesCompromiso||task.mes)||'').toLowerCase()];
-    if(!dayMatch||month==null)return null;return new Date(new Date().getFullYear(),month,Number(dayMatch[1]));
+    if(!dayMatch||month==null)return null;return new Date(taskYear(task),month,Number(dayMatch[1]));
   }
   function daysUntil(task){var due=dueDate(task);if(!due)return null;var now=new Date();var today=new Date(now.getFullYear(),now.getMonth(),now.getDate());return Math.round((due-today)/86400000);}
   function isArchived(task){return task&&(task.archivada===true||String(task.archivada).toLowerCase()==='true'||task.borrada===true||String(task.borrada).toLowerCase()==='true');}

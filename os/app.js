@@ -19,6 +19,24 @@
 
   function greeting(){var h=new Date().getHours();return h<12?'Buenos días':h<19?'Buenas tardes':'Buenas noches';}
   function timeLabel(date){return new Intl.DateTimeFormat('es-MX',{hour:'2-digit',minute:'2-digit'}).format(date);}
+  function edadTexto(ms){
+    var m=Math.floor(ms/60000); if(m<2)return'hace un momento'; if(m<60)return'hace '+m+' min';
+    var h=Math.floor(m/60); if(h<24)return'hace '+h+(h===1?' hora':' horas');
+    var d=Math.floor(h/24); if(d<31)return'hace '+d+(d===1?' día':' días');
+    var me=Math.floor(d/30); return'hace '+me+(me===1?' mes':' meses');
+  }
+  /* Antes decía "Hoy, 10:32" con la hora del NAVEGADOR: parecía recién actualizado
+     aunque el Sheet llevara meses sin tocarse. Si la respuesta trae la fecha del
+     dato, esa manda; si no, se dice claramente que es la hora de consulta. */
+  function selloDato(data){
+    var crudo=data&&(data.generated_at||data.updated_at||data.actualizado);
+    if(crudo){
+      var f=new Date(crudo);
+      if(!isNaN(f)) return 'Datos del '+new Intl.DateTimeFormat('es-MX',{day:'numeric',month:'long'}).format(f)+
+                            ' · '+edadTexto(Date.now()-f.getTime());
+    }
+    return 'Consultado a las '+timeLabel(new Date());
+  }
   function setConnection(kind,text){var el=$('connection');el.className='connection '+kind;el.innerHTML='<i class="ti ti-'+(kind==='ok'?'cloud-check':kind==='error'?'cloud-off':'loader-2 spin')+'"></i> '+text;}
   function safeText(value){return String(value==null?'':value);}
   function initials(name){return safeText(name).split(/\s+/).filter(Boolean).slice(0,2).map(function(v){return v.charAt(0);}).join('').toUpperCase()||'YO';}
@@ -76,7 +94,7 @@
       var response=await fetch(CATALOG_ENDPOINT+(_tk?'&k='+encodeURIComponent(_tk):'')+'&cb='+Date.now(),{cache:'no-store',credentials:'omit',signal:controller.signal});
       if(!response.ok)throw new Error('HTTP '+response.status);var data=await response.json();
       if(!data.ok||!Array.isArray(data.rows))throw new Error('Respuesta incompleta');
-      renderModules(data.rows);$('updated-at').textContent='Hoy, '+timeLabel(new Date());setConnection('ok','En línea');
+      renderModules(data.rows);$('updated-at').textContent=selloDato(data);setConnection('ok','En línea');
     }catch(error){
       setConnection('error','Sin conexión');$('updated-at').textContent='No se pudo actualizar';
       if(!state.modules.length){var grid=$('module-grid');grid.setAttribute('aria-busy','false');grid.innerHTML='<div class="empty-state">Control Maestro no respondió. Por seguridad no se habilitaron enlaces. Intente actualizar nuevamente.</div>';}
