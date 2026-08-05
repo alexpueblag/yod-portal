@@ -2,7 +2,27 @@
   'use strict';
 
   var CATALOG_ENDPOINT='https://script.google.com/macros/s/AKfycby5LKYKRwl0EsNgppOIeD_ArST8vSXRgNO4ns8XZbFW4yjfglzu4io_vhabB8h-J792Tw/exec?action=read&resource=Portal';
-  var PORTERO_ENDPOINT='https://script.google.com/macros/s/AKfycbwlDDCWWzOWYZsUpBU9uqsQ7aenQ469PF6s6FkNlBFS1_cJSU5njG9oQmuyELy5zlqzFg/exec';
+  /* El portal validaba la sesión SIEMPRE contra el portero del dominio
+     aurumarquitectos.com (hoy suspendido): aunque el gate ya te dejara pasar, el
+     portal se quedaba en "Verificando Acceso…" para siempre. Ahora usa el mismo
+     relevo que el resto del sistema: original primero, respaldo si falla. */
+  var PORTERO_ORIGINAL='https://script.google.com/macros/s/AKfycbwlDDCWWzOWYZsUpBU9uqsQ7aenQ469PF6s6FkNlBFS1_cJSU5njG9oQmuyELy5zlqzFg/exec';
+  var PORTERO_RESPALDO='https://script.google.com/macros/s/AKfycbyrhqMb70Qh8BljAOYnSYBZ8IXUuEclFWPg10NWIv3GJ-nAR597OTsGB4IL-xyUl7Ms/exec';
+  var PORTERO_ENDPOINT=(function(){try{return localStorage.getItem('pyod_portero')||PORTERO_ORIGINAL;}catch(e){return PORTERO_ORIGINAL;}})();
+  function conLimite_(p,ms){return Promise.race([p,new Promise(function(_,rj){setTimeout(function(){rj(new Error('timeout'));},ms||12000);})]);}
+  async function canjearConRelevo_(token){
+    async function intenta(base){
+      var r=await conLimite_(fetch(base+'?recurso=canje&t='+encodeURIComponent(token),{cache:'no-store',credentials:'omit'}));
+      var raw=await r.text(); try{return JSON.parse(raw);}catch(e){return null;}
+    }
+    var d=null; try{ d=await intenta(PORTERO_ENDPOINT); }catch(e){ d=null; }
+    if((!d||!d.ok) && PORTERO_ENDPOINT!==PORTERO_RESPALDO){
+      PORTERO_ENDPOINT=PORTERO_RESPALDO;
+      try{localStorage.setItem('pyod_portero',PORTERO_RESPALDO);}catch(e){}
+      try{ d=await intenta(PORTERO_ENDPOINT); }catch(e){ d=null; }
+    }
+    return d;
+  }
   var TOKEN_KEY='pyod_clave_v1';
   var ICONS={
     'SYS-POTENCIALES':'map-2','SYS-TRACK':'route','SYS-MIRAMAR':'building-community',
@@ -105,10 +125,8 @@
     var token='';try{token=localStorage.getItem(TOKEN_KEY)||'';}catch(_error){}
     if(!token){purgarDatosSensibles();$('access-status').textContent='Requiere acceso';state.profileReady=false;return;}
     try{
-      var response=await fetch(PORTERO_ENDPOINT+'?recurso=canje&t='+encodeURIComponent(token),{cache:'no-store',credentials:'omit'});
-      var raw=await response.text();var data=null;try{data=JSON.parse(raw);}catch(_p){}
-      var diag=response.ok?(data===null?'respuesta-no-JSON':(data.ok?'':('canje:'+(data.error||'ok=false')))):('HTTP-'+response.status);
-      if(!data||!data.ok){console.warn('[YOD OS] canje falló →',diag,{status:response.status,muestra:String(raw).slice(0,200)});var e2=new Error(diag);e2._diag=diag;throw e2;}
+      var data=await canjearConRelevo_(token);
+      if(!data||!data.ok){var diag='canje:'+((data&&data.error)||'sin-respuesta');console.warn('[YOD OS] canje falló →',diag);var e2=new Error(diag);e2._diag=diag;throw e2;}
       state.role=data.rol||'vista';state.boards=data.boards||'';state.profileReady=true;
       state.personName=String(data.nombre||'').trim();
       var name=data.nombre||data.correo||'Equipo YOD';$('user-name').textContent=name;$('user-role').textContent=state.role;$('avatar').textContent=initials(name);$('first-name').textContent=name.split(/\s|@/)[0];$('access-status').textContent=state.role==='admin'?'Dirección':'Autorizado';
