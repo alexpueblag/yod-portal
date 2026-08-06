@@ -275,6 +275,15 @@
     var requests=[];if(financeAllowed)requests.push(loadFinance(token));if(marketingAllowed)requests.push(loadMarketing(token));await Promise.allSettled(requests);
   }
 
+  (function(){
+    var t=document.getElementById('funnelToggle'),m=document.getElementById('funnelMenu');
+    if(!t||!m)return;
+    function cerrar(){m.hidden=true;t.setAttribute('aria-expanded','false');}
+    t.addEventListener('click',function(e){e.stopPropagation();var abre=m.hidden;m.hidden=!abre;t.setAttribute('aria-expanded',String(abre));});
+    document.addEventListener('click',function(e){if(!m.hidden&&!m.contains(e.target)&&e.target!==t)cerrar();});
+    document.addEventListener('keydown',function(e){if(e.key==='Escape')cerrar();});
+  })();
+
   function buildSearch(query){
     var box=$('search-results');box.replaceChildren();var term=safeText(query).trim().toLowerCase();
     var matches=state.modules.filter(function(row){return !term||[row.titulo_portal,row.descripcion_portal,row.audiencia].join(' ').toLowerCase().includes(term);});

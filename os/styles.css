@@ -91,3 +91,14 @@ a:focus-visible,button:focus-visible,input:focus-visible,[tabindex]:focus-visibl
 .module-card-off .module-state{color:var(--muted)}
 .module-card-off footer i{display:none}
 .nav-item-off{opacity:.5;cursor:default}
+
+/* submenú del embudo comercial (tarjeta Marketing) */
+.pulse-card{position:relative}
+.funnel-toggle{background:none;border:1px solid var(--line);border-radius:8px;color:var(--muted);width:30px;height:30px;display:grid;place-items:center;cursor:pointer;font-size:16px;transition:color .15s,border-color .15s}
+.funnel-toggle:hover,.funnel-toggle[aria-expanded="true"]{color:var(--gold);border-color:var(--gold)}
+.funnel-menu{position:absolute;top:58px;right:14px;z-index:30;min-width:250px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:6px;box-shadow:0 16px 40px rgba(0,0,0,.35)}
+.funnel-menu a{display:flex;gap:10px;align-items:center;padding:9px 10px;border-radius:9px;text-decoration:none;color:inherit}
+.funnel-menu a:hover{background:var(--gold-soft)}
+.funnel-menu a i{color:var(--gold);font-size:17px}
+.funnel-menu strong{display:block;font-size:13px;font-weight:600}
+.funnel-menu small{display:block;font-size:10px;color:var(--muted)}
