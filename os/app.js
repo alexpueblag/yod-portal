@@ -8,19 +8,18 @@
      relevo que el resto del sistema: original primero, respaldo si falla. */
   var PORTERO_ORIGINAL='https://script.google.com/macros/s/AKfycbwlDDCWWzOWYZsUpBU9uqsQ7aenQ469PF6s6FkNlBFS1_cJSU5njG9oQmuyELy5zlqzFg/exec';
   var PORTERO_RESPALDO='https://script.google.com/macros/s/AKfycbyrhqMb70Qh8BljAOYnSYBZ8IXUuEclFWPg10NWIv3GJ-nAR597OTsGB4IL-xyUl7Ms/exec';
-  var PORTERO_ENDPOINT=(function(){try{return localStorage.getItem('pyod_portero')||PORTERO_ORIGINAL;}catch(e){return PORTERO_ORIGINAL;}})();
+  /* El ORIGINAL siempre primero; el respaldo solo si aquel falla en esta llamada.
+     Antes el relevo se pegaba en localStorage y, al reactivarse Google, el
+     navegador seguía en el respaldo (que no conoce correos ni login de Google). */
+  try{localStorage.removeItem('pyod_portero');}catch(e){}
   function conLimite_(p,ms){return Promise.race([p,new Promise(function(_,rj){setTimeout(function(){rj(new Error('timeout'));},ms||12000);})]);}
   async function canjearConRelevo_(token){
     async function intenta(base){
       var r=await conLimite_(fetch(base+'?recurso=canje&t='+encodeURIComponent(token),{cache:'no-store',credentials:'omit'}));
       var raw=await r.text(); try{return JSON.parse(raw);}catch(e){return null;}
     }
-    var d=null; try{ d=await intenta(PORTERO_ENDPOINT); }catch(e){ d=null; }
-    if((!d||!d.ok) && PORTERO_ENDPOINT!==PORTERO_RESPALDO){
-      PORTERO_ENDPOINT=PORTERO_RESPALDO;
-      try{localStorage.setItem('pyod_portero',PORTERO_RESPALDO);}catch(e){}
-      try{ d=await intenta(PORTERO_ENDPOINT); }catch(e){ d=null; }
-    }
+    var d=null; try{ d=await intenta(PORTERO_ORIGINAL); }catch(e){ d=null; }
+    if(!d||!d.ok){ try{ d=await intenta(PORTERO_RESPALDO); }catch(e){ d=null; } }
     return d;
   }
   var TOKEN_KEY='pyod_clave_v1';
@@ -151,7 +150,7 @@
   async function loadReconcile(token){
     var section=$('reconcile');if(!section)return;
     try{
-      var url=PORTERO_ENDPOINT+'?recurso=accesos-lista&k='+encodeURIComponent(token)+'&cb='+Date.now();
+      var url=PORTERO_ORIGINAL+'?recurso=accesos-lista&k='+encodeURIComponent(token)+'&cb='+Date.now();
       var resp=await fetch(url,{cache:'no-store',credentials:'omit'});var data=await resp.json();
       if(!data||!data.ok||!Array.isArray(data.usuarios))return;
       var personas=data.usuarios.filter(function(u){return String(u.estado||'').toLowerCase()==='activo';});

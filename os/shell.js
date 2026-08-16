@@ -17,20 +17,21 @@
      entrar. Ahora usa el mismo relevo que el resto: original, y si falla, respaldo. */
   var PORTERO_ORIGINAL = 'https://script.google.com/macros/s/AKfycbwlDDCWWzOWYZsUpBU9uqsQ7aenQ469PF6s6FkNlBFS1_cJSU5njG9oQmuyELy5zlqzFg/exec';
   var PORTERO_RESPALDO = 'https://script.google.com/macros/s/AKfycbyrhqMb70Qh8BljAOYnSYBZ8IXUuEclFWPg10NWIv3GJ-nAR597OTsGB4IL-xyUl7Ms/exec';
-  var PORTERO = (function () { try { return localStorage.getItem('pyod_portero') || PORTERO_ORIGINAL; } catch (e) { return PORTERO_ORIGINAL; } })();
+  /* El ORIGINAL siempre primero; el respaldo solo si aquel falla en esta
+     llamada. Antes el relevo se pegaba en localStorage y, al reactivarse
+     Google, el navegador seguía en el respaldo (que no conoce los correos ni
+     el login de Google). Limpiamos ese resto de la emergencia. */
+  try { localStorage.removeItem('pyod_portero'); } catch (e) { }
   function canjeConRelevo(k) {
     function intenta(base) {
       return fetch(base + '?recurso=canje&t=' + encodeURIComponent(k), { cache: 'no-store', credentials: 'omit' })
         .then(function (r) { return r.text(); })
         .then(function (t) { try { return JSON.parse(t); } catch (e) { return null; } });
     }
-    return intenta(PORTERO).then(function (j) {
+    return intenta(PORTERO_ORIGINAL).then(function (j) {
       if (j && j.ok) return j;
-      if (PORTERO === PORTERO_RESPALDO) return j;
-      PORTERO = PORTERO_RESPALDO;
-      try { localStorage.setItem('pyod_portero', PORTERO_RESPALDO); } catch (e) { }
-      return intenta(PORTERO);
-    }).catch(function () { return null; });
+      return intenta(PORTERO_RESPALDO);
+    }).catch(function () { return intenta(PORTERO_RESPALDO).catch(function () { return null; }); });
   }
   var OS = 'https://alexpueblag.github.io/yod-portal/os/';
   var CORPORATE = 'https://yodesarrollo.mx/';
