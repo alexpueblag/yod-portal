@@ -20,7 +20,7 @@ body{margin:0;background:var(--paper);color:var(--ink);font-family:'Instrument S
 .banner .sp{flex:1}
 .b-btn{border:0;border-radius:9px;padding:11px 16px;font:600 12px 'Instrument Sans',sans-serif;cursor:pointer;background:var(--gold);color:var(--ink);text-decoration:none;display:inline-flex;gap:8px;align-items:center}
 /* el sistema solar de KPI */
-.sky{position:relative;height:520px;display:grid;place-items:center}
+.sky{position:relative;height:620px;display:grid;place-items:center}
 .orb{position:absolute;display:grid;place-items:center;text-decoration:none;color:inherit;cursor:pointer;transition:transform .5s cubic-bezier(.2,.8,.2,1),left .5s,top .5s,width .5s,height .5s}
 .orb .ring{position:absolute;inset:0;border-radius:50%;border:10px solid var(--c);opacity:.22}
 .orb .ring2{position:absolute;inset:0;border-radius:50%;background:radial-gradient(circle at 50% 40%,#fff 0 58%,transparent 60%);}
@@ -30,7 +30,7 @@ body{margin:0;background:var(--paper);color:var(--ink);font-family:'Instrument S
 .orb svg{display:block}
 .orb .num{display:none;font-family:'Instrument Serif';font-size:56px;line-height:1;color:var(--ink)}
 .orb.rey{width:300px;height:300px;left:calc(50% - 150px);top:calc(50% - 150px)}
-.orb.rey .num{display:block}.orb.rey .dot{display:none}.orb.rey .lab{bottom:-34px;font-size:12px;color:var(--ink)}
+.orb.rey .num{display:block}.orb.rey .dot{display:none}.orb.rey .lab{top:50%;bottom:auto;transform:translateY(46px);font-size:12px;color:var(--ink);letter-spacing:.1em}
 .orb.rey .ring{border-width:14px;opacity:.28}
 .orb.sat{width:130px;height:130px}
 .orb.sat:hover .num{display:block;font-size:34px}.orb.sat:hover .dot{display:none}
@@ -52,7 +52,7 @@ body{margin:0;background:var(--paper);color:var(--ink);font-family:'Instrument S
 .pz.needs .cov{outline:3px solid var(--gold);outline-offset:3px;animation:lat 1.8s infinite}
 h2.sec{font-family:'Instrument Serif';font-weight:400;font-size:22px;margin:0 0 4px}
 .eyebrow{color:var(--gold);text-transform:uppercase;letter-spacing:.13em;font-size:10px;font-weight:600}
-@media (max-width:640px){.sky{height:420px}.orb.rey{width:220px;height:220px;left:calc(50% - 110px);top:calc(50% - 110px)}.orb.rey .num{font-size:44px}.orb.sat{width:84px;height:84px}.orb.sat .lab{display:none}}
+@media (max-width:640px){.sky{height:480px}.orb.rey{width:220px;height:220px;left:calc(50% - 110px);top:calc(50% - 110px)}.orb.rey .num{font-size:44px}.orb.sat{width:84px;height:84px}.orb.sat .lab{display:none}}
 </style></head><body>
 <div class="dummy-tag">dummy C · datos ficticios</div>
 <div class="wrap">
@@ -87,7 +87,7 @@ function color(k){const r=k.k==='dias'?k.meta/k.v:k.v/k.meta;return r>=1?'var(--
 function spark(tr,c,w,h){const mx=Math.max(...tr),mn=Math.min(...tr);const pts=tr.map((v,i)=>`${i/(tr.length-1)*w},${h-(v-mn)/((mx-mn)||1)*h}`).join(' ');return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}"><polyline points="${pts}" fill="none" stroke="${c}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`}
 function pinta(){
   const sky=document.getElementById('sky'); sky.innerHTML='';
-  const W=sky.clientWidth,H=sky.clientHeight,cx=W/2,cy=H/2,R=Math.min(W,H)/2-40;
+  const W=sky.clientWidth,H=sky.clientHeight,cx=W/2,cy=H/2,R=Math.min(W,H)/2-70;
   const sats=KPI.filter(k=>k.k!==rey); const kr=KPI.find(k=>k.k===rey);
   const mk=(k,cls,x,y)=>{const c=color(k);const el=document.createElement('a');el.className='orb '+cls;el.style.setProperty('--c',c);
     if(x!=null){el.style.left=(x-65)+'px';el.style.top=(y-65)+'px'}
@@ -95,7 +95,7 @@ function pinta(){
     el.title=`${k.lab}: ${k.v}${k.unit||''} · meta ${k.meta}${k.unit||''} · fuente ${k.src}`;
     el.onclick=()=>{rey=k.k;pinta()}; sky.appendChild(el)};
   mk(kr,'rey');
-  sats.forEach((k,i)=>{const a=-Math.PI/2+i*(2*Math.PI/sats.length);mk(k,'sat',cx+Math.cos(a)*R,cy+Math.sin(a)*R)});
+  sats.forEach((k,i)=>{const a=-Math.PI/2+Math.PI/4+i*(2*Math.PI/sats.length);mk(k,'sat',cx+Math.cos(a)*R,cy+Math.sin(a)*R)});
 }
 const PZ=[
  {n:'El terreno que dijo que sí',st:'publicada',p:5,crown:'hollow',img:'https://alexpueblag.github.io/sala-edicion/laminas/servilleta-final/L7.png'},
