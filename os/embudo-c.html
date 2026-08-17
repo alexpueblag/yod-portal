@@ -61,7 +61,7 @@ h2.sec{font-family:'Instrument Serif';font-weight:400;font-size:22px;margin:0 0 
 .casc .rowh{padding:12px 12px;border-bottom:1px solid var(--paper-2);display:flex;flex-direction:column;justify-content:center;gap:2px}
 .casc .rowh b{font-size:12px;font-weight:600}.casc .rowh span{font-size:10px;color:var(--muted)}
 .casc .row{display:grid;grid-template-columns:repeat(9,minmax(96px,1fr));border-bottom:1px solid var(--paper-2)}
-.cell{position:relative;min-height:92px;border-left:1px solid var(--paper-2);display:grid;place-items:center;padding:8px}
+.cell{position:relative;min-height:112px;padding-bottom:22px;border-left:1px solid var(--paper-2);display:grid;place-items:center;padding:8px}
 .cell.done{background:linear-gradient(90deg,var(--paper-2),var(--paper))}
 .cell .th{width:64px;height:80px;border-radius:8px;object-fit:cover;box-shadow:0 6px 16px rgba(35,29,20,.15);display:block}
 .cell .th.v{border:2px solid var(--ink)}
@@ -70,7 +70,7 @@ h2.sec{font-family:'Instrument Serif';font-weight:400;font-size:22px;margin:0 0 
 .cell.crea .ph{background:var(--ink);color:#ead8b5}
 .cell.crea .ph i{animation:gira 2.4s linear infinite}
 @keyframes gira{to{transform:rotate(360deg)}}
-.cell .tag{position:absolute;bottom:6px;left:50%;transform:translateX(-50%);font-size:9px;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;color:var(--muted)}
+.cell .tag{position:absolute;bottom:5px;left:50%;transform:translateX(-50%);font-size:9px;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;color:var(--muted);background:rgba(255,255,255,.85);padding:1px 6px;border-radius:999px}
 .cell.rev .tag{color:var(--gold);font-weight:600}.cell.crea .tag{color:var(--ink)}
 .cell.pub .th{border:2px solid var(--success)}
 .cell .arrow{position:absolute;right:-7px;top:50%;transform:translateY(-50%);color:var(--gold);font-size:14px;z-index:2}
