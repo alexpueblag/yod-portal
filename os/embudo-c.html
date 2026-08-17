@@ -132,20 +132,6 @@ function pinta(){
   mk(kr,'rey');
   sats.forEach((k,i)=>{const a=-Math.PI/2+Math.PI/4+i*(2*Math.PI/sats.length);mk(k,'sat',cx+Math.cos(a)*R,cy+Math.sin(a)*R)});
 }
-const PZ=[
- {n:'El terreno que dijo que sí',st:'publicada',p:5,crown:'hollow',img:'https://alexpueblag.github.io/sala-edicion/laminas/servilleta-final/L7.png'},
- {n:'La Servilleta',st:'video',p:4,img:'https://alexpueblag.github.io/sala-edicion/laminas/servilleta-final/L2.png'},
- {n:'El Apodo del Terreno',st:'láminas · te toca',p:3,needs:1,img:'https://alexpueblag.github.io/sala-edicion/laminas/apodo-g1/L1.png'},
- {n:'La Obra que No Empezó',st:'idea',p:1,img:''},
- {n:'Así Se Ve Saber (reel)',st:'idea',p:1,img:''},
-];
-document.getElementById('pieces').innerHTML=PZ.map(p=>{
-  const C=2*Math.PI*59, dash=C*p.p/5;
-  return `<div class="pz ${p.needs?'needs':''}">${p.crown?`<i class="ti ti-crown crown ${p.crown}"></i>`:''}
-   ${p.img?`<img class="cov" src="${p.img}" alt="">`:`<div class="cov" style="background:var(--paper-2)"></div>`}
-   <svg class="ringp" viewBox="0 0 128 128"><circle cx="64" cy="64" r="59" stroke="var(--line)"/><circle cx="64" cy="64" r="59" stroke="var(--gold)" stroke-dasharray="${dash} ${C}" transform="rotate(-90 64 64)" stroke-linecap="round"/></svg>
-   <div class="name">${p.n}</div><div class="st">${p.st}</div></div>`}).join('');
-
 const GATES=[
  ['Idea','eje / ángulo'],['Imagen origen','lámina semilla'],['Guion','historia por lámina'],['7 láminas','con diálogo'],
  ['Prueba de video','1 escena por lámina'],['Voces','edición + voz'],['Máscaras','texto en capa, pulido'],['Copy + ligas','UTM correctas'],['Lista','para publicar']];
