@@ -1,12 +1,37 @@
-# NO BORRAR — cascaron pre-montado de `yod-portal`
+# Cascaron · yod-portal
 
-Este repo existe para que, el dia de la mudanza, la liga vieja
-`https://alexpueblag.github.io/yod-portal/` no muera ni un minuto.
+Este repo **no tiene codigo**. Es una direccion vieja que sigue viva.
 
-Ese dia se renombra a `yod-portal` y toma su lugar **ya construido**.
-Mientras tanto no sirve a nadie y parece basura. No lo es.
+El tablero real vive en `yodesarrollomx/yod-portal` y se sirve en:
+<https://yodesarrollomx.github.io/yod-portal/>
 
-Borrarlo obliga a crear el cascaron a mano el dia del corte, con la
-liga vieja caida mientras tanto — y con el riesgo de que GitHub haya
-retirado el nombre `yod-portal` por trafico, en cuyo caso esa direccion
-se pierde para siempre.
+Cuando el repo se transfirio a la organizacion, GitHub dejo de redirigir su
+GitHub Pages (lo dice su documentacion: *"we don't redirect GitHub Pages
+associated with the repository"*). Sin este cascaron,
+`https://alexpueblag.github.io/yod-portal/` daria 404 para siempre.
+
+El `404.html` recibe cualquier ruta que no exista y reenvia conservando la
+ruta, el query string y el fragmento.
+
+## Ademas de la redireccion, este cascaron SIRVE ARCHIVOS DE VERDAD
+
+- `os/shell.js`
+- `os/shell.css`
+
+Esos archivos los cargan otros tableros con `<script src>` / `<link href>`
+apuntando todavia a esta direccion vieja. Un `script src` que cae en el
+404.html recibe HTML, no JavaScript: el tablero se queda sin Portero.
+Por eso aqui hay copias reales. **No los borres aunque parezcan duplicados.**
+
+## NO BORRAR · NO ARCHIVAR · NO RENOMBRAR
+
+De esta direccion cuelgan:
+
+- QRs **ya impresos**, que no se pueden reimprimir
+- captions de publicaciones de Facebook e Instagram **ya publicadas**
+- ligas mandadas por WhatsApp a clientes e inversionistas
+
+Nada de eso se puede corregir. Si alguien borra este repo, o lo archiva, o
+apaga su GitHub Pages, esas ligas mueren y no hay forma de recuperarlas.
+
+Este cascaron es **permanente**. No es un puente de una semana.
