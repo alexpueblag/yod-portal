@@ -1,0 +1,154 @@
+/* ==========================================================================
+   YOD OS · Shell compartido — la CARA única para todos los boards.
+   Cada board carga este archivo (como portero.js) y shell.js lo envuelve.
+   Clases prefijadas con .yod- para no chocar con el markup de cada board.
+   ========================================================================== */
+.yod-shell{
+  --yg:#9a7b3f; --yg-hi:#b07c2e; --yg-soft:#e9dfcb;
+  --yink:#17140f; --ypaper:#f6f3ed; --ypaper-2:#eee9df; --ycard:#fff;
+  --ymuted:#5f594e; --yline:#e1dacb; --ytext:#231d14;
+  --yshadow:0 18px 48px rgba(35,29,20,.09);
+}
+body.yod-on{margin:0;background:#f6f3ed}
+.yod-shell{min-height:100vh;display:grid;grid-template-columns:240px minmax(0,1fr);
+  font-family:'Instrument Sans',system-ui,-apple-system,sans-serif;color:var(--ytext);
+  -webkit-font-smoothing:antialiased}
+
+/* ---- barra lateral ---- */
+.yod-sidebar{position:sticky;top:0;height:100vh;background:var(--yink);color:#f6f3ed;
+  padding:28px 18px 20px;display:flex;flex-direction:column;overflow:hidden;z-index:30}
+.yod-sidebar:after{content:'YOD';position:absolute;right:-35px;bottom:45px;font-family:'Instrument Serif',serif;
+  font-size:120px;color:rgba(255,255,255,.025);transform:rotate(-90deg);pointer-events:none}
+.yod-brand{display:flex;align-items:baseline;gap:7px;text-decoration:none;color:inherit;
+  padding:0 12px 27px;border-bottom:1px solid rgba(255,255,255,.08)}
+.yod-brand b{font-family:'Instrument Serif',serif;font-size:31px;letter-spacing:.03em;font-weight:400}
+.yod-brand span{font-size:10px;letter-spacing:.16em;color:#bda875}
+.yod-nav{display:flex;flex-direction:column;gap:3px;padding-top:20px;flex:1 1 auto;overflow-y:auto;min-height:0;
+  scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.14) transparent}
+.yod-nav::-webkit-scrollbar{width:5px}.yod-nav::-webkit-scrollbar-thumb{background:rgba(255,255,255,.14);border-radius:3px}
+.yod-nav-label{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:#9a9382;font-weight:600;
+  padding:15px 12px 7px;margin:6px 0 0}
+.yod-nav-item{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:9px;text-decoration:none;
+  color:#9f9a8f;font-size:13.5px;cursor:pointer;border:0;background:none;width:100%;text-align:left;font-family:inherit}
+.yod-nav-item i{font-size:18px;flex:none}
+.yod-nav-item span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.yod-nav-item:hover,.yod-nav-item:focus-visible{background:rgba(255,255,255,.07);color:#fff;outline:none}
+.yod-nav-item.active{background:rgba(154,123,63,.2);color:#ead8b5}
+.yod-os-link{color:#ead8b5;margin-bottom:4px}
+.yod-nav-loading{font-size:12px;color:#9a9382;padding:6px 12px;display:flex;align-items:center;gap:7px}
+.yod-foot{margin-top:auto;border-top:1px solid rgba(255,255,255,.08);padding:18px 10px 0;display:flex;
+  align-items:center;gap:10px;position:relative;z-index:1}
+.yod-avatar{width:35px;height:35px;border-radius:50%;display:grid;place-items:center;background:var(--yg);
+  color:var(--yink);font-size:11px;font-weight:600;flex:none}
+.yod-id{display:flex;min-width:0;flex-direction:column;gap:2px}
+.yod-id strong{font-size:12px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.yod-id span{font-size:10px;color:#918b7e;text-transform:capitalize}
+
+/* ---- topbar ---- */
+/* max-width/margin/padding/box-shadow fijados para que reglas header{}/main{}
+   de cada board NO se filtren sobre el chrome del shell (topbar/main). */
+.yod-main{min-width:0;display:flex;flex-direction:column;max-width:none;margin:0;padding:0}
+.yod-topbar{height:64px;position:sticky;top:0;z-index:20;border-bottom:1px solid var(--yline);
+  background:rgba(246,243,237,.92);backdrop-filter:blur(12px);display:flex;align-items:center;padding:0 30px;gap:18px;
+  max-width:none;margin:0;box-shadow:none;flex:none}
+.yod-search{width:min(420px,52%);height:39px;border:1px solid var(--yline);background:var(--ycard);border-radius:9px;
+  color:var(--ymuted);display:flex;align-items:center;gap:10px;padding:0 12px;font:inherit;cursor:pointer}
+.yod-search span{text-align:left;flex:1}
+.yod-search kbd{border:1px solid var(--yline);border-radius:5px;padding:2px 6px;background:var(--ypaper);font:11px inherit}
+.yod-top-actions{margin-left:auto;display:flex;align-items:center;gap:12px}
+.yod-role{font-size:11px;font-weight:600;letter-spacing:.03em;padding:5px 11px;border-radius:999px;
+  border:1px solid var(--yline);display:inline-flex;align-items:center;gap:6px;white-space:nowrap}
+.yod-role:before{content:'';width:6px;height:6px;border-radius:50%;background:currentColor}
+.yod-role.direccion{color:#705725;background:var(--yg-soft);border-color:transparent}
+.yod-role.colaborador{color:var(--ymuted);background:var(--ypaper-2)}
+.yod-back,.yod-home{height:39px;border:1px solid var(--yline);border-radius:9px;background:var(--ycard);color:var(--yink);
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;font:12px inherit;text-decoration:none;padding:0 11px;white-space:nowrap}
+.yod-back i,.yod-home i{font-size:17px}
+.yod-back:hover,.yod-home:hover{border-color:var(--yg)}
+/* botón menú (hamburguesa) — solo visible en móvil */
+.yod-burger{display:none;width:40px;height:40px;flex:none;border:1px solid var(--yline);border-radius:10px;background:var(--ycard);
+  color:var(--yink);place-items:center;cursor:pointer;font-size:20px;padding:0}
+.yod-burger:active{background:var(--ypaper-2)}
+/* velo oscuro detrás del cajón */
+.yod-scrim{position:fixed;inset:0;background:rgba(23,20,15,.5);backdrop-filter:blur(2px);opacity:0;pointer-events:none;
+  transition:opacity .28s ease;z-index:205}
+
+/* ---- lienzo (contiene el contenido original del board) ---- */
+.yod-canvas{background:#f6f3ed;flex:1;min-width:0}
+
+/* ---- buscador ⌘K ---- */
+.yod-dialog{width:min(600px,calc(100% - 28px));border:0;border-radius:14px;padding:0;background:var(--ycard);
+  color:var(--yink);box-shadow:0 30px 90px rgba(0,0,0,.32)}
+.yod-dialog::backdrop{background:rgba(23,20,15,.55);backdrop-filter:blur(3px)}
+.yod-dialog form{height:56px;border-bottom:1px solid var(--yline);display:flex;align-items:center;padding:0 15px;gap:10px}
+.yod-dialog input{flex:1;border:0;outline:0;background:transparent;font:15px inherit;color:var(--yink)}
+.yod-dialog .yr{padding:10px;max-height:420px;overflow:auto}
+.yod-dialog a{display:flex;align-items:center;gap:12px;padding:12px;border-radius:9px;text-decoration:none;color:var(--yink)}
+.yod-dialog a:hover{background:var(--ypaper)}
+.yod-dialog a i{font-size:21px;color:var(--yg)}
+.yod-dialog a strong{font-size:13px;font-weight:500;display:block}
+.yod-dialog a small{font-size:11px;color:var(--ymuted)}
+.yod-spin{animation:yodspin 1s linear infinite}@keyframes yodspin{to{transform:rotate(1turn)}}
+
+/* ---- responsive · móvil como app (cajón deslizante) ---- */
+@media(max-width:900px){
+  .yod-shell{display:block}
+  /* la barra lateral pasa a ser un cajón off-canvas que entra al tocar ☰ */
+  .yod-sidebar{position:fixed;left:0;top:0;height:100dvh;width:min(304px,86vw);z-index:210;padding:20px 16px 18px;
+    transform:translateX(-100%);transition:transform .28s cubic-bezier(.4,0,.2,1);box-shadow:0 0 70px rgba(0,0,0,.34)}
+  .yod-shell.yod-nav-open .yod-sidebar{transform:translateX(0)}
+  .yod-shell.yod-nav-open .yod-scrim{opacity:1;pointer-events:auto}
+  .yod-burger{display:grid}
+  .yod-topbar{height:56px;padding:0 12px;gap:11px}
+  /* en móvil el buscador se reduce a la lupa (⌘K abre el panel completo) */
+  .yod-search{width:40px;flex:none;justify-content:center;padding:0}
+  .yod-search span,.yod-search kbd{display:none}
+  /* dentro del cajón: labels completos y targets grandes para el dedo */
+  .yod-brand span{display:inline}
+  .yod-nav-item{padding:13px 14px;font-size:15px;justify-content:flex-start;gap:14px}
+  .yod-nav-item span{display:inline}
+  .yod-id{display:flex}
+  .yod-nav-item i{font-size:21px}
+  .yod-canvas{padding:0}
+}
+@media(max-width:430px){.yod-role{display:none}.yod-topbar{padding:0 10px}}
+/* Candado de página: el tablero actual no está en los accesos de esta sesión */
+.yod-lock{min-height:60vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;text-align:center;padding:40px 24px;font-family:'Instrument Sans',system-ui,sans-serif}
+.yod-lock i{font-size:44px;color:var(--ygold,#9a7b3f)}
+.yod-lock h2{font-family:'Instrument Serif',Georgia,serif;font-weight:400;font-size:28px;margin:6px 0 0;color:var(--yink,#17140f)}
+.yod-lock p{max-width:420px;margin:0;color:var(--ymuted,#766f62);font-size:14px;line-height:1.6}
+.yod-lock a{margin-top:14px;display:inline-flex;align-items:center;gap:8px;background:var(--yink,#17140f);color:#f6f3ed;text-decoration:none;padding:11px 20px;border-radius:10px;font-size:13.5px}
+.yod-lock a:hover{opacity:.92}
+/* Cerrar sesión (pie del sidebar) */
+.yod-out{margin-left:auto;flex:none;width:32px;height:32px;display:grid;place-items:center;border:0;border-radius:8px;background:transparent;color:rgba(246,243,237,.55);cursor:pointer;font-size:17px}
+.yod-out:hover{background:rgba(255,255,255,.08);color:#f6f3ed}
+
+/* ===== Quick wins UX (enjambre 15-jul): foco, táctil 44px, safe-area ===== */
+/* Foco de teclado visible en todo el cromo del shell */
+.yod-shell a:focus-visible,.yod-shell button:focus-visible,.yod-burger:focus-visible,.yod-out:focus-visible,.yod-search:focus-visible,.yod-nav-item:focus-visible{outline:2px solid #b98b3c;outline-offset:2px;border-radius:8px}
+/* Safe-area del iPhone: notch arriba, home-indicator abajo */
+.yod-topbar{padding-top:env(safe-area-inset-top)}
+.yod-sidebar{padding-bottom:calc(20px + env(safe-area-inset-bottom))}
+/* Objetivos táctiles mínimos en dispositivos de dedo */
+@media (pointer:coarse){
+  .yod-burger,.yod-back,.yod-search,.yod-home{min-width:44px;min-height:44px}
+  .yod-out{min-width:44px;min-height:44px}
+  .yod-nav-item{min-height:44px}
+  .yod-topbar{gap:8px}
+}
+
+/* ===== Volver a YOD OS siempre visible (enjambre UX: navegación) ===== */
+/* Marca YOD OS en la topbar: en escritorio ya está en el sidebar; en móvil el
+   sidebar es cajón, así que la marca aquí ancla la identidad y da salida clara. */
+.yod-topbrand{display:none;align-items:baseline;gap:5px;text-decoration:none;color:var(--yink);padding:0 2px;flex:none}
+.yod-topbrand b{font-family:'Instrument Serif',Georgia,serif;font-size:21px;font-weight:400;letter-spacing:.02em;line-height:1}
+.yod-topbrand span{font-size:9px;letter-spacing:.14em;color:var(--yg,#9a7b3f)}
+.yod-topbar{z-index:100}
+@media(max-width:900px){
+  .yod-topbrand{display:flex;flex:1;min-width:0}
+  .yod-back{width:40px;padding:0}
+  .yod-back span,.yod-home span{display:none}
+  .yod-home{width:40px;padding:0}
+  .yod-search{flex:none;width:44px;padding:0;justify-content:center}
+  .yod-search span,.yod-search kbd{display:none}
+}
